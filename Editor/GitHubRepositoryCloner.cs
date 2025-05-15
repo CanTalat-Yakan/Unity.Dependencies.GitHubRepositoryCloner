@@ -20,8 +20,9 @@ namespace UnityEssentials
 
         private Vector2 _scrollPosition;
 
-        private bool _createAssemblyDefinition = false;
-        private bool _useTemplateFiles = false;
+        private bool _createAssemblyDefinition = true;
+        private bool _createPackageManifests = true;
+        private bool _useTemplateFiles = true;
         private string _templateFolder = "Assets/_Templates"; // Template files folder
 
         [MenuItem("Tools/GitHub Repository Cloner")]
@@ -44,7 +45,7 @@ namespace UnityEssentials
                 if (GUILayout.Button("Save Token"))
                 {
                     EditorPrefs.SetString(TokenKey, s_token);
-                    FetchRepos();
+                    FetchRepositories();
                 }
                 return; // Early return since no repositories to show yet
             }
@@ -62,7 +63,7 @@ namespace UnityEssentials
                 if (s_repositoryNames.Count == 0 && !_isFetching)
                 {
                     if (GUILayout.Button("Fetch Repositories"))
-                        FetchRepos();
+                        FetchRepositories();
 
                     return; // Early return because no repositories to show yet
                 }
@@ -99,8 +100,9 @@ namespace UnityEssentials
 
                     GUILayout.Space(10);
 
-                    _createAssemblyDefinition = EditorGUILayout.ToggleLeft("Create Assembly Definitions into cloned repositories", _createAssemblyDefinition);
-                    _useTemplateFiles = EditorGUILayout.ToggleLeft("Copy Template Files into cloned repositories", _useTemplateFiles);
+                    _createAssemblyDefinition = EditorGUILayout.ToggleLeft("Create Assembly Definitions", _createAssemblyDefinition);
+                    _createPackageManifests = EditorGUILayout.ToggleLeft("Create Package Manifests", _createPackageManifests);
+                    _useTemplateFiles = EditorGUILayout.ToggleLeft("Copy Template Files", _useTemplateFiles);
 
                     GUILayout.FlexibleSpace(); // push button to bottom
 
@@ -108,13 +110,13 @@ namespace UnityEssentials
                     {
                         // Clone directly into Assets folder
                         string targetPath = Application.dataPath;
-                        CloneSelectedRepos(targetPath);
+                        CloneSelectedRepositories(targetPath);
                     }
                 }
             }
         }
 
-        private async void FetchRepos()
+        private async void FetchRepositories()
         {
             _isFetching = true;
             Repaint();
@@ -135,7 +137,7 @@ namespace UnityEssentials
 
             if (!response.IsSuccessStatusCode)
             {
-                Debug.LogError("[Git] Invalid token or failed to fetch repos. Clearing token.");
+                Debug.LogError("[Git] Invalid token or failed to fetch repositories. Clearing token.");
                 EditorPrefs.DeleteKey(TokenKey);
                 s_token = "";
                 s_repositoryNames.Clear();
@@ -172,7 +174,7 @@ namespace UnityEssentials
             return names;
         }
 
-        private async void CloneSelectedRepos(string targetFolder)
+        private async void CloneSelectedRepositories(string targetFolder)
         {
             List<string> selectedRepos = new();
 
@@ -189,11 +191,12 @@ namespace UnityEssentials
             if (!EditorUtility.DisplayDialog("Confirm Clone", $"Clone {selectedRepos.Count} repositories into:\nAssets/ ?", "Yes", "Cancel"))
                 return;
 
-            foreach (var repoFullName in selectedRepos)
+            foreach (var repositoryFullName in selectedRepos)
             {
-                string cloneUrl = $"https://github.com/{repoFullName}.git";
-                string repoFolderName = repoFullName.Split('/')[1]; // repository name after owner/
-                string localPath = Path.Combine(targetFolder, repoFolderName);
+                string cloneUrl = $"https://github.com/{repositoryFullName}.git";
+                string repositoryFolderName = repositoryFullName.Split('/')[1]; // repository name after owner/
+                string packageName = repositoryFolderName.Remove(0, 5); // removes Unity prefix
+                string localPath = Path.Combine(targetFolder, repositoryFolderName);
 
                 if (Directory.Exists(localPath))
                 {
@@ -201,17 +204,32 @@ namespace UnityEssentials
                     continue;
                 }
 
-                EditorUtility.DisplayProgressBar("Cloning Repositories", $"Cloning {repoFullName}...", 0);
+                EditorUtility.DisplayProgressBar("Cloning Repositories", $"Cloning {repositoryFullName}...", 0);
 
-                bool success = await CloneGitRepo(cloneUrl, localPath);
+                bool success = await CloneGitRepository(cloneUrl, localPath);
                 if (success)
                 {
-                    Debug.Log($"Cloned {repoFullName} into {localPath}");
+                    Debug.Log($"Cloned {repositoryFullName} into {localPath}");
+
+                    // Rename LICENSE file if it exists and has no extension
+                    string licensePath = Path.Combine(localPath, "LICENSE");
+                    if (File.Exists(licensePath) && string.IsNullOrEmpty(Path.GetExtension(licensePath)))
+                    {
+                        string newLicensePath = licensePath + ".md";
+                        File.Move(licensePath, newLicensePath);
+                        Debug.Log($"Renamed LICENSE to LICENSE.md in {repositoryFullName}");
+                    }
 
                     if (_createAssemblyDefinition)
                     {
-                        CreateAssemblyDefinition(localPath, repoFolderName);
+                        CreateAssemblyDefinition(localPath, repositoryFolderName);
                         Debug.Log($"Created Assembly Definition at {localPath}");
+                    }
+                    
+                    if (_createPackageManifests)
+                    {
+                        CreatePackageManifest(localPath, packageName);
+                        Debug.Log($"Created Package Manifest at {localPath}");
                     }
 
                     if (_useTemplateFiles)
@@ -220,7 +238,7 @@ namespace UnityEssentials
                         Debug.Log($"Copied template files into {localPath}");
                     }
                 }
-                else Debug.LogError($"Failed to clone repository: {repoFullName}");
+                else Debug.LogError($"Failed to clone repository: {repositoryFullName}");
 
                 EditorUtility.ClearProgressBar();
             }
@@ -229,7 +247,7 @@ namespace UnityEssentials
             EditorUtility.DisplayDialog("Clone Complete", "Selected repositories cloned successfully.", "OK");
         }
 
-        private Task<bool> CloneGitRepo(string cloneUrl, string localPath)
+        private Task<bool> CloneGitRepository(string cloneUrl, string localPath)
         {
             return Task.Run(() =>
             {
@@ -259,7 +277,7 @@ namespace UnityEssentials
                 }
                 catch (System.Exception ex)
                 {
-                    Debug.LogError($"Exception cloning repo: {ex.Message}");
+                    Debug.LogError($"Exception cloning repository: {ex.Message}");
                     return false;
                 }
             });
@@ -275,6 +293,21 @@ namespace UnityEssentials
             string asmdefPath = Path.Combine(localPath, $"{fileName}.asmdef");
             string json = JsonUtility.ToJson(asmdefData, true);
             File.WriteAllText(asmdefPath, json);
+        }
+
+        private void CreatePackageManifest(string localPath, string packageName)
+        {
+            var packageData = new PackageData
+            {
+                name = $"com.UnityEssentials.{packageName}",
+                displayName = $"UnityEssenstials {packageName}"
+            };
+
+            string json = JsonUtility.ToJson(packageData, true);
+
+            // Write to package.json file
+            string packageJsonPath = Path.Combine(localPath, "package.json");
+            File.WriteAllText(packageJsonPath, json);
         }
 
         private void CopyTemplateFiles(string sourceFolder, string destinationFolder)
@@ -318,6 +351,37 @@ namespace UnityEssentials
             public string[] excludePlatforms = new string[] { };
             public string[] defineConstraints = new string[] { };
             public object[] versionDefines = new object[] { };
+        }
+
+        [System.Serializable]
+        public class PackageData
+        {
+            public string name;
+            public string version = "1.0.0";
+            public string displayName;
+            public string description = "This is a part of the UnityEssentials Ecosystem";
+            public string unity = "2022.1";
+            public string documentationUrl = "";
+            public string changelogUrl = "";
+            public string licensesUrl = ""; 
+            public List<PackageDependency> dependencyList = new List<PackageDependency>();
+            public string[] keywords = new string[] { };
+            public AuthorInfo author = new AuthorInfo();
+        }
+
+        [System.Serializable]
+        public class PackageDependency
+        {
+            public string name;
+            public string version;
+        }
+
+        [System.Serializable]
+        public class AuthorInfo
+        {
+            public string name = "Eggy Studio";
+            public string email = "";
+            public string url = "";
         }
     }
 }
