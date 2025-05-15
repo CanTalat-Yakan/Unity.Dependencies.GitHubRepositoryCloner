@@ -299,7 +299,7 @@ namespace UnityEssentials
         {
             var packageData = new PackageData
             {
-                name = $"com.UnityEssentials.{packageName}",
+                name = $"com.unityessentials.{packageName.ToLower()}",
                 displayName = $"UnityEssenstials {packageName}"
             };
 
