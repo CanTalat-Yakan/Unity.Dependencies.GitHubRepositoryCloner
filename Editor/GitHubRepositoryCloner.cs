@@ -379,7 +379,7 @@ namespace UnityEssentials
         [System.Serializable]
         public class AuthorInfo
         {
-            public string name = "Eggy Studio";
+            public string name = "Unity Essentials";
             public string email = "";
             public string url = "";
         }
