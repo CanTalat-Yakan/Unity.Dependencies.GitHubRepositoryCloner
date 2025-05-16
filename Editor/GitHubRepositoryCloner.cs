@@ -173,7 +173,6 @@ namespace UnityEssentials
 
             return names;
         }
-
         private async void CloneSelectedRepositories(string targetFolder)
         {
             List<string> selectedRepos = new();
@@ -193,9 +192,9 @@ namespace UnityEssentials
 
             foreach (var repositoryFullName in selectedRepos)
             {
-                string cloneUrl = $"https://github.com/{repositoryFullName}.git";
-                string repositoryFolderName = repositoryFullName.Split('/')[1]; // repository name after owner/
-                string packageName = repositoryFolderName.Remove(0, 5); // removes Unity prefix
+                string cloneUrl = $"https://{s_token}@github.com/{repositoryFullName}.git"; // Include token in URL
+                string repositoryFolderName = repositoryFullName.Split('/')[1];
+                string packageName = repositoryFolderName.Remove(0, 5);
                 string localPath = Path.Combine(targetFolder, repositoryFolderName);
 
                 if (Directory.Exists(localPath))
@@ -206,39 +205,30 @@ namespace UnityEssentials
 
                 EditorUtility.DisplayProgressBar("Cloning Repositories", $"Cloning {repositoryFullName}...", 0);
 
-                bool success = await CloneGitRepository(cloneUrl, localPath);
+                bool success = await CloneGitRepository(cloneUrl, localPath).ConfigureAwait(true); // Ensure main thread continuation
+
                 if (success)
                 {
                     Debug.Log($"Cloned {repositoryFullName} into {localPath}");
 
-                    // Rename LICENSE file if it exists and has no extension
-                    string licensePath = Path.Combine(localPath, "LICENSE");
-                    if (File.Exists(licensePath) && string.IsNullOrEmpty(Path.GetExtension(licensePath)))
-                    {
-                        string newLicensePath = licensePath + ".md";
-                        File.Move(licensePath, newLicensePath);
-                        Debug.Log($"Renamed LICENSE to LICENSE.md in {repositoryFullName}");
-                    }
+                    // Ensure all file operations are on the main thread
+                    await Task.Run(() => { }).ConfigureAwait(true); // Explicitly switch context if needed
+
+                    RenameLicenseFile(localPath, repositoryFullName);
 
                     if (_createAssemblyDefinition)
-                    {
                         CreateAssemblyDefinition(localPath, repositoryFolderName);
-                        Debug.Log($"Created Assembly Definition at {localPath}");
-                    }
-                    
+
                     if (_createPackageManifests)
-                    {
                         CreatePackageManifest(localPath, packageName);
-                        Debug.Log($"Created Package Manifest at {localPath}");
-                    }
 
                     if (_useTemplateFiles)
-                    {
                         CopyTemplateFiles(_templateFolder, localPath);
-                        Debug.Log($"Copied template files into {localPath}");
-                    }
                 }
-                else Debug.LogError($"Failed to clone repository: {repositoryFullName}");
+                else
+                {
+                    Debug.LogError($"Failed to clone repository: {repositoryFullName}");
+                }
 
                 EditorUtility.ClearProgressBar();
             }
@@ -283,14 +273,41 @@ namespace UnityEssentials
             });
         }
 
-        private void CreateAssemblyDefinition(string localPath, string fileName)
+        private void RenameLicenseFile(string localPath, string repositoryFullName)
         {
+            string licensePath = Path.Combine(localPath, "LICENSE");
+            if (File.Exists(licensePath) && string.IsNullOrEmpty(Path.GetExtension(licensePath)))
+            {
+                string newLicensePath = licensePath + ".md";
+                try
+                {
+                    File.Move(licensePath, newLicensePath);
+                    Debug.Log($"Renamed LICENSE to LICENSE.md in {repositoryFullName}");
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogError($"Failed to rename LICENSE file: {ex.Message}");
+                }
+            }
+        }
+
+        private void CreateAssemblyDefinition(string localPath, string packageName)
+        {
+            // Delete existing .asmdef files to avoid duplicates
+            string[] existingAsmdefs = Directory.GetFiles(localPath, "*.asmdef");
+            foreach (string asmdef in existingAsmdefs)
+            {
+                File.Delete(asmdef);
+                Debug.Log($"Deleted existing assembly definition: {asmdef}");
+            }
+
+            // Create new .asmdef with the correct name
             var asmdefData = new AssemblyDefinitionData
             {
-                name = fileName
+                name = $"UnityEssentials.{packageName}"
             };
 
-            string asmdefPath = Path.Combine(localPath, $"{fileName}.asmdef");
+            string asmdefPath = Path.Combine(localPath, $"UnityEssentials.{packageName}.asmdef");
             string json = JsonUtility.ToJson(asmdefData, true);
             File.WriteAllText(asmdefPath, json);
         }
