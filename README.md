@@ -49,7 +49,7 @@ A Unity Editor tool to fetch and clone private or public GitHub repositories usi
    Choose repositories. Enable optional features:
    - **Create Assembly Definitions**
    - **Create Package Manifests**
-   - **Copy Template Files** from `Assets/_Templates`
+   - **Copy Template Files**
 
 5. **Cloning Target**  
    All repos are cloned into `Assets/`.
