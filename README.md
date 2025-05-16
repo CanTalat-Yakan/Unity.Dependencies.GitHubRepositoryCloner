@@ -20,7 +20,6 @@ using UnityEssentials;
 
 A Unity Editor tool to fetch and clone private or public GitHub repositories using a personal access token. Designed to accelerate multi-repo onboarding for modular Unity projects.
 
----
 
 ## Features
 
@@ -34,7 +33,6 @@ A Unity Editor tool to fetch and clone private or public GitHub repositories usi
 - Caches GitHub token in EditorPrefs
 - Responsive EditorWindow with scrollable selection UI
 
----
 
 ## Usage
 
@@ -56,7 +54,6 @@ A Unity Editor tool to fetch and clone private or public GitHub repositories usi
 5. **Cloning Target**  
    All repos are cloned into `Assets/`.
 
----
 
 ## Template Folder
 
@@ -66,7 +63,6 @@ Template files are recursively copied from:
 
 These will be duplicated into each cloned repository folder.
 
----
 
 ## Requirements
 
@@ -74,23 +70,8 @@ These will be duplicated into each cloned repository folder.
 - Git must be installed and in system path
 - Internet access
 
----
 
 ## Token Security
 
 Stored using `EditorPrefs`. Select *Change Token* to clear.
 
----
-
-## Known Limitations
-
-- Token is exposed in Git clone URL; secure your system.
-- No OAuth flow; manual PAT input only.
-- No pagination; max 100 repositories fetched.
-
----
-
-## Namespace
-
-```csharp
-UnityEssentials
