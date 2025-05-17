@@ -40,6 +40,7 @@ namespace UnityEssentials
         {
             if (string.IsNullOrEmpty(s_token))
                 s_token = EditorPrefs.GetString(TokenKey, "");
+            else FetchRepositories();
 
             if (string.IsNullOrEmpty(s_token))
             {
