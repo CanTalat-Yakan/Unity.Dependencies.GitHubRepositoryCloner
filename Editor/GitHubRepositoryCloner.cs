@@ -12,7 +12,10 @@ namespace UnityEssentials
 {
     public class GitHubRepositoryCloner : EditorWindow
     {
+        private const string AuthorName = "Unity Essentials";
+        private const string ProjectName = "UnityEssentials";
         private const string TokenKey = "GitToken";
+
         private static string s_token;
         private static List<string> s_repositoryNames = new();
         private static List<bool> s_repositorySelected = new();
@@ -304,10 +307,10 @@ namespace UnityEssentials
             // Create new .asmdef with the correct name
             var asmdefData = new AssemblyDefinitionData
             {
-                name = $"UnityEssentials.{packageName}"
+                name = $"{ProjectName}.{packageName}"
             };
 
-            string asmdefPath = Path.Combine(localPath, $"UnityEssentials.{packageName}.asmdef");
+            string asmdefPath = Path.Combine(localPath, $"{ProjectName}.{packageName}.asmdef");
             string json = JsonUtility.ToJson(asmdefData, true);
             File.WriteAllText(asmdefPath, json);
         }
@@ -316,8 +319,8 @@ namespace UnityEssentials
         {
             var packageData = new PackageData
             {
-                name = $"com.unityessentials.{packageName.ToLower()}",
-                displayName = $"UnityEssenstials {packageName}"
+                name = $"com.{ProjectName.ToLower()}.{packageName.ToLower()}",
+                displayName = $"{ProjectName} {packageName}"
             };
 
             string json = JsonUtility.ToJson(packageData, true);
@@ -361,7 +364,7 @@ namespace UnityEssentials
             public bool noEngineReferences = false;
             public bool overrideReferences = false;
             public bool autoReferenced = true;
-            public string rootNamespace = "UnityEssentials";
+            public string rootNamespace = ProjectName;
             public string[] references = new string[] { };
             public string[] precompiledReferences = new string[] { };
             public string[] includePlatforms = new string[] { };
@@ -376,14 +379,14 @@ namespace UnityEssentials
             public string name;
             public string version = "1.0.0";
             public string displayName;
-            public string description = "This is a part of the UnityEssentials Ecosystem";
+            public string description = $"This is a part of the {ProjectName} Ecosystem";
             public string unity = "2022.1";
             public string documentationUrl = "";
             public string changelogUrl = "";
             public string licensesUrl = ""; 
-            public List<PackageDependency> dependencyList = new List<PackageDependency>();
+            public List<PackageDependency> dependencyList = new();
             public string[] keywords = new string[] { };
-            public AuthorInfo author = new AuthorInfo();
+            public AuthorInfo author = new();
         }
 
         [System.Serializable]
@@ -396,7 +399,7 @@ namespace UnityEssentials
         [System.Serializable]
         public class AuthorInfo
         {
-            public string name = "Unity Essentials";
+            public string name = AuthorName;
             public string email = "";
             public string url = "";
         }
