@@ -12,6 +12,7 @@ namespace UnityEssentials
 {
     public class GitHubRepositoryCloner : EditorWindow
     {
+        private const string TemplateFolder = "Assets/Templates";
         private const string AuthorName = "Unity Essentials";
         private const string ProjectName = "UnityEssentials";
         private const string TokenKey = "GitToken";
@@ -27,7 +28,6 @@ namespace UnityEssentials
         private bool _createAssemblyDefinition = true;
         private bool _createPackageManifests = true;
         private bool _useTemplateFiles = true;
-        private string _templateFolder = "Assets/Templates"; // Template files folder
 
         [MenuItem("Tools/GitHub Repository Cloner")]
         public static void ShowWindow()
@@ -230,7 +230,7 @@ namespace UnityEssentials
                         CreatePackageManifest(localPath, packageName);
 
                     if (_useTemplateFiles)
-                        CopyTemplateFiles(_templateFolder, localPath);
+                        CopyTemplateFiles(TemplateFolder, localPath);
                 }
                 else
                 {
