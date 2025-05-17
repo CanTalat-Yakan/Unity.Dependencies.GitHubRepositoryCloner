@@ -327,6 +327,7 @@ namespace UnityEssentials
             };
 
             string json = JsonUtility.ToJson(packageData, true);
+            json = json.Replace("\\", "");
 
             // Write to package.json file
             string packageJsonPath = Path.Combine(localPath, "package.json");
@@ -387,16 +388,9 @@ namespace UnityEssentials
             public string documentationUrl = "";
             public string changelogUrl = "";
             public string licensesUrl = "";
-            public List<PackageDependency> dependencyList = new() { new() { name = "com.unityessentials.essentials", version = "1.0.0" } };
+            public string dependencies = " { \"com.unityessentials.essentials\": \"1.0.0\" } ";
             public string[] keywords = new string[] { };
             public AuthorInfo author = new();
-        }
-
-        [System.Serializable]
-        public class PackageDependency
-        {
-            public string name;
-            public string version;
         }
 
         [System.Serializable]
