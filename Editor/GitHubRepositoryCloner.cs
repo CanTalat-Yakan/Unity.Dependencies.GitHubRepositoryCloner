@@ -26,7 +26,7 @@ namespace UnityEssentials
         private bool _createAssemblyDefinition = true;
         private bool _createPackageManifests = true;
         private bool _useTemplateFiles = true;
-        private string _templateFolder = "Assets/_Templates"; // Template files folder
+        private string _templateFolder = "Assets/Templates"; // Template files folder
 
         [MenuItem("Tools/GitHub Repository Cloner")]
         public static void ShowWindow()
