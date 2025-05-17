@@ -7,7 +7,6 @@ using System.IO;
 using System.Threading.Tasks;
 using Debug = UnityEngine.Debug;
 
-#if UNITY_EDITOR
 namespace UnityEssentials
 {
     public class GitHubRepositoryCloner : EditorWindow
@@ -24,10 +23,11 @@ namespace UnityEssentials
 
         private Vector2 _scrollPosition;
 
-        private string _tokenPlaceholder = string.Empty;
         private bool _createAssemblyDefinition = true;
         private bool _createPackageManifests = true;
         private bool _useTemplateFiles = true;
+
+        private string _tokenPlaceholder = string.Empty;
 
         [MenuItem("Tools/GitHub Repository Cloner")]
         public static void ShowWindow()
@@ -40,7 +40,6 @@ namespace UnityEssentials
         {
             if (string.IsNullOrEmpty(s_token))
                 s_token = EditorPrefs.GetString(TokenKey, "");
-            else FetchRepositories();
 
             if (string.IsNullOrEmpty(s_token))
             {
@@ -70,8 +69,7 @@ namespace UnityEssentials
 
                 if (s_repositoryNames.Count == 0 && !_isFetching)
                 {
-                    if (GUILayout.Button("Fetch Repositories"))
-                        FetchRepositories();
+                    FetchRepositories();
 
                     return; // Early return because no repositories to show yet
                 }
@@ -156,7 +154,7 @@ namespace UnityEssentials
             }
 
             string json = await response.Content.ReadAsStringAsync();
-            s_repositoryNames = ExtractRepoNames(json);
+            s_repositoryNames = ExtractRepositoryNames(json);
 
             // Reset selection list
             s_repositorySelected = new List<bool>(new bool[s_repositoryNames.Count]);
@@ -165,7 +163,7 @@ namespace UnityEssentials
             Repaint();
         }
 
-        private List<string> ExtractRepoNames(string json)
+        private List<string> ExtractRepositoryNames(string json)
         {
             List<string> names = new();
 
@@ -410,4 +408,3 @@ namespace UnityEssentials
         }
     }
 }
-#endif
