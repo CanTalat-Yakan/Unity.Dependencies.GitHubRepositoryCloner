@@ -41,6 +41,8 @@ namespace UnityEssentials
             if (string.IsNullOrEmpty(s_token))
                 s_token = EditorPrefs.GetString(TokenKey, "");
 
+            GUILayout.Space(10);
+
             if (string.IsNullOrEmpty(s_token))
             {
                 GUILayout.Label("Enter your GitHub token:");
@@ -82,9 +84,9 @@ namespace UnityEssentials
                     float totalHeight = position.height;
 
                     // Calculate fixed heights for elements above and below the scroll view
-                    float headerHeight = EditorGUIUtility.singleLineHeight * 3 + 20; // estimate labels & toggles
+                    float headerHeight = EditorGUIUtility.singleLineHeight * 3 + 30; // estimate labels & toggles
                     float toggleTemplateHeight = EditorGUIUtility.singleLineHeight + 6; // checkbox toggle
-                    float buttonHeight = 30 + 10; // button + padding
+                    float buttonHeight = 30 + 20; // button + padding
                     float padding = 20;
 
                     // Calculate remaining height for scroll view
@@ -118,6 +120,10 @@ namespace UnityEssentials
                         string targetPath = Application.dataPath;
                         CloneSelectedRepositories(targetPath);
                     }
+
+
+                    GUILayout.Space(10);
+
                 }
             }
         }
