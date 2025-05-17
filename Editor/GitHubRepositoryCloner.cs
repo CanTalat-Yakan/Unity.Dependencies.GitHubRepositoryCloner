@@ -23,6 +23,7 @@ namespace UnityEssentials
 
         private Vector2 _scrollPosition;
 
+        private string _tokenPlaceholder = string.Empty;
         private bool _createAssemblyDefinition = true;
         private bool _createPackageManifests = true;
         private bool _useTemplateFiles = true;
@@ -43,11 +44,14 @@ namespace UnityEssentials
             if (string.IsNullOrEmpty(s_token))
             {
                 GUILayout.Label("Enter your GitHub token:");
-                s_token = EditorGUILayout.TextField(s_token);
+
+                _tokenPlaceholder = EditorGUILayout.TextField(_tokenPlaceholder);
 
                 if (GUILayout.Button("Save Token"))
                 {
+                    s_token = _tokenPlaceholder;
                     EditorPrefs.SetString(TokenKey, s_token);
+
                     FetchRepositories();
                 }
                 return; // Early return since no repositories to show yet
@@ -383,7 +387,7 @@ namespace UnityEssentials
             public string unity = "2022.1";
             public string documentationUrl = "";
             public string changelogUrl = "";
-            public string licensesUrl = ""; 
+            public string licensesUrl = "";
             public List<PackageDependency> dependencyList = new();
             public string[] keywords = new string[] { };
             public AuthorInfo author = new();
