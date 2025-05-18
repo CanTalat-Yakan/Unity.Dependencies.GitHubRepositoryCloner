@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using UnityEditor;
 using UnityEngine;
 using System.Net.Http;
@@ -14,6 +15,7 @@ namespace UnityEssentials
         private const string TemplateFolder = "Assets/Templates";
         private const string AuthorName = "Unity Essentials";
         private const string ProjectName = "UnityEssentials";
+        private const string ExcludeString = "Unity";
         private const string TokenKey = "GitToken";
 
         private static string s_token;
@@ -206,7 +208,7 @@ namespace UnityEssentials
             {
                 string cloneUrl = $"https://{s_token}@github.com/{repositoryFullName}.git"; // Include token in URL
                 string repositoryFolderName = repositoryFullName.Split('/')[1];
-                string packageName = repositoryFolderName.Remove(0, 5);
+                string packageName = repositoryFolderName.Replace(ExcludeString, "");
                 string localPath = Path.Combine(targetFolder, repositoryFolderName);
 
                 if (Directory.Exists(localPath))
@@ -394,7 +396,7 @@ namespace UnityEssentials
             public string documentationUrl = "";
             public string changelogUrl = "";
             public string licensesUrl = "";
-            public string dependencies = " { \"com.unityessentials.essentials\": \"1.0.0\" } ";
+            public string dependencies = " { \"com.unityessentials.core\": \"1.0.0\" } ";
             public string[] keywords = new string[] { };
             public AuthorInfo author = new();
         }
@@ -408,3 +410,4 @@ namespace UnityEssentials
         }
     }
 }
+#endif
