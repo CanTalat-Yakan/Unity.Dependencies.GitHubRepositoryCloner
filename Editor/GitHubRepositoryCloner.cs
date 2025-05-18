@@ -231,7 +231,7 @@ namespace UnityEssentials
                     RenameLicenseFile(localPath, repositoryFullName);
 
                     if (_createAssemblyDefinition)
-                        CreateAssemblyDefinition(localPath, repositoryFolderName);
+                        CreateAssemblyDefinition(localPath, packageName);
 
                     if (_createPackageManifests)
                         CreatePackageManifest(localPath, packageName);
