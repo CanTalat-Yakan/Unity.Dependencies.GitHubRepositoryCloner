@@ -306,12 +306,12 @@ namespace UnityEssentials
         /// <param name="localPath">The local file system path where the repository will be cloned. This path must be writable.</param>
         /// <returns>A task that represents the asynchronous operation. The task result is <see langword="true"/> if the
         /// repository was successfully cloned; otherwise, <see langword="false"/>.</returns>
-        private Task<bool> CloneGitRepository(string cloneUrl, string localPath)
-        {
-            return Task.Run(() =>
+        private Task<bool> CloneGitRepository(string cloneUrl, string localPath) =>
+            Task.Run(() =>
             {
                 try
                 {
+                    // Step 1: Clone the repository
                     ProcessStartInfo psi = new()
                     {
                         FileName = "git",
@@ -322,17 +322,65 @@ namespace UnityEssentials
                         CreateNoWindow = true,
                     };
 
-                    using Process process = Process.Start(psi);
-                    process.WaitForExit();
-
-                    if (process.ExitCode == 0)
-                        return true;
-                    else
+                    using (Process process = Process.Start(psi))
                     {
-                        string error = process.StandardError.ReadToEnd();
-                        Debug.LogError($"Git clone error: {error}");
-                        return false;
+                        process.WaitForExit();
+
+                        if (process.ExitCode != 0)
+                        {
+                            string error = process.StandardError.ReadToEnd();
+                            Debug.LogError($"Git clone error: {error}");
+                            return false;
+                        }
                     }
+
+                    // Step 2: Check for LFS usage
+                    string gitattributesPath = Path.Combine(localPath, ".gitattributes");
+                    if (File.Exists(gitattributesPath))
+                    {
+                        string[] lines = File.ReadAllLines(gitattributesPath);
+                        bool usesLfs = false;
+                        foreach (var line in lines)
+                            if (line.Contains("filter=lfs"))
+                            {
+                                usesLfs = true;
+                                break;
+                            }
+
+                        // Step 3: If LFS is used, run 'git lfs pull'
+                        if (usesLfs)
+                        {
+                            ProcessStartInfo lfsPsi = new()
+                            {
+                                FileName = "git",
+                                Arguments = "lfs pull",
+                                WorkingDirectory = localPath,
+                                RedirectStandardOutput = true,
+                                RedirectStandardError = true,
+                                UseShellExecute = false,
+                                CreateNoWindow = true,
+                            };
+
+                            using (Process lfsProcess = Process.Start(lfsPsi))
+                            {
+                                lfsProcess.WaitForExit();
+
+                                if (lfsProcess.ExitCode != 0)
+                                {
+                                    string lfsError = lfsProcess.StandardError.ReadToEnd();
+                                    if (lfsError.Contains("git-lfs: command not found") || lfsError.Contains("'lfs' is not a git command"))
+                                        Debug.LogWarning("Git LFS is required but not installed. LFS files were not pulled.");
+                                    else
+                                    {
+                                        Debug.LogError($"Git LFS pull error: {lfsError}");
+                                        return false;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    return true;
                 }
                 catch (System.Exception ex)
                 {
@@ -340,7 +388,6 @@ namespace UnityEssentials
                     return false;
                 }
             });
-        }
 
         /// <summary>
         /// Renames the LICENSE file in the specified local repository path to LICENSE.md if it exists and does not
