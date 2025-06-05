@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using UnityEditor;
 using UnityEngine;
 using System.Net.Http;
@@ -46,13 +46,6 @@ namespace UnityEssentials
             window.minSize = new Vector2(400, 300);
         }
 
-        /// <summary>
-        /// Renders the graphical user interface (GUI) for managing GitHub token input and repository selection.
-        /// </summary>
-        /// <remarks>This method provides a user interface for entering and saving a GitHub token,
-        /// selecting repositories to clone,  and configuring additional options such as creating assembly definitions,
-        /// package manifests, and copying template files.  The interface dynamically adjusts based on the presence of a
-        /// saved token and the availability of repository data.</remarks>
         public void OnGUI()
         {
             if (string.IsNullOrEmpty(s_token))
@@ -94,21 +87,23 @@ namespace UnityEssentials
                 }
                 else if (s_repositoryNames.Count > 0)
                 {
+                    GUILayout.BeginHorizontal();
                     GUILayout.Label("Select repositories to clone:");
+                    if (GUILayout.Button("Refresh", GUILayout.Width(100), GUILayout.Height(18)))
+                    {
+                        FetchRepositories();
+                        GUI.FocusControl(null); // Remove focus from button to avoid accidental double-clicks
+                    }
+                    GUILayout.EndHorizontal();
 
                     // Calculate space for the scroll view dynamically
-                    // Get the total available height of the window's client area
                     float totalHeight = position.height;
-
-                    // Calculate fixed heights for elements above and below the scroll view
-                    float headerHeight = EditorGUIUtility.singleLineHeight * 3 + 30; // estimate labels & toggles
-                    float toggleTemplateHeight = EditorGUIUtility.singleLineHeight + 6; // checkbox toggle
-                    float buttonHeight = 30 + 20; // button + padding
+                    float headerHeight = EditorGUIUtility.singleLineHeight * 3 + 30;
+                    float toggleTemplateHeight = EditorGUIUtility.singleLineHeight + 6;
+                    float buttonHeight = 30 + 20;
                     float padding = 20;
-
-                    // Calculate remaining height for scroll view
                     float scrollHeight = totalHeight - (headerHeight + toggleTemplateHeight + buttonHeight + padding);
-                    scrollHeight = Mathf.Max(scrollHeight, 100); // minimum height
+                    scrollHeight = Mathf.Max(scrollHeight, 100);
 
                     using (new GUILayout.VerticalScope("box"))
                     {
@@ -129,18 +124,15 @@ namespace UnityEssentials
                     _createPackageManifests = EditorGUILayout.ToggleLeft("Create Package Manifests", _createPackageManifests);
                     _useTemplateFiles = EditorGUILayout.ToggleLeft("Copy Template Files", _useTemplateFiles);
 
-                    GUILayout.FlexibleSpace(); // push button to bottom
+                    GUILayout.FlexibleSpace();
 
                     if (GUILayout.Button("Clone Selected Repositories", GUILayout.Height(30)))
                     {
-                        // Clone directly into Assets folder
                         string targetPath = Application.dataPath;
                         CloneSelectedRepositories(targetPath);
                     }
 
-
                     GUILayout.Space(10);
-
                 }
             }
         }
