@@ -383,15 +383,6 @@ namespace UnityEssentials
                 }
             });
 
-        /// <summary>
-        /// Renames the LICENSE file in the specified local repository path to LICENSE.md if it exists and does not
-        /// already have a file extension.
-        /// </summary>
-        /// <remarks>This method checks for the existence of a LICENSE file in the specified directory. If
-        /// the file exists and does not have an extension, it renames the file to LICENSE.md. Any errors encountered
-        /// during the renaming process are logged.</remarks>
-        /// <param name="localPath">The local file system path to the repository where the LICENSE file is located.</param>
-        /// <param name="repositoryFullName">The full name of the repository, used for logging purposes.</param>
         private void RenameLicenseFile(string localPath, string repositoryFullName)
         {
             string licensePath = Path.Combine(localPath, "LICENSE");
@@ -410,16 +401,6 @@ namespace UnityEssentials
             }
         }
 
-        /// <summary>
-        /// Creates a new assembly definition file (.asmdef) for the specified package at the given local path.
-        /// </summary>
-        /// <remarks>If any existing .asmdef files are found in the specified <paramref
-        /// name="localPath"/>, they will be deleted to avoid duplicates. The new assembly definition file will be named
-        /// using the format "<c>{ProjectName}.{packageName}.asmdef</c>", where <c>ProjectName</c> is a predefined
-        /// project-level identifier.</remarks>
-        /// <param name="localPath">The local file system path where the assembly definition file will be created. This path must be writable.</param>
-        /// <param name="packageName">The name of the package for which the assembly definition file is being created. This will be used to
-        /// generate the assembly name.</param>
         private void CreateAssemblyDefinition(string localPath, string packageName)
         {
             // Delete existing .asmdef files to avoid duplicates
@@ -441,16 +422,6 @@ namespace UnityEssentials
             File.WriteAllText(asmdefPath, json);
         }
 
-        /// <summary>
-        /// Creates a package manifest file in the specified local path with the given package name.
-        /// </summary>
-        /// <remarks>The method generates a JSON file named <c>package.json</c> in the specified <paramref
-        /// name="localPath"/>.  The file contains metadata about the package, including its unique identifier and
-        /// display name,  which are derived from the project name and the provided <paramref
-        /// name="packageName"/>.</remarks>
-        /// <param name="localPath">The local directory where the package manifest file will be created. This path must be valid and writable.</param>
-        /// <param name="packageName">The name of the package to include in the manifest. This value is used to generate the package's unique
-        /// identifier and display name.</param>
         private void CreatePackageManifest(string localPath, string packageName)
         {
             var packageData = new PackageData
@@ -459,23 +430,13 @@ namespace UnityEssentials
                 displayName = $"{ProjectName} {packageName}"
             };
 
-            string json = JsonUtility.ToJson(packageData, true);
-            json = json.Replace("\\", "");
+            var json = JsonUtility.ToJson(packageData, true);
 
             // Write to package.json file
             string packageJsonPath = Path.Combine(localPath, "package.json");
             File.WriteAllText(packageJsonPath, json);
         }
 
-        /// <summary>
-        /// Copies all files and subdirectories from the specified source folder to the destination folder.
-        /// </summary>
-        /// <remarks>This method recursively copies all files and subdirectories from the source folder to
-        /// the destination folder, preserving the directory structure. Files with a <c>.meta</c> extension are ignored
-        /// during the copy process.</remarks>
-        /// <param name="sourceFolder">The path of the source folder containing the files and directories to copy. Must exist.</param>
-        /// <param name="destinationFolder">The path of the destination folder where the files and directories will be copied. If the folder does not
-        /// exist, it will be created.</param>
         private void CopyTemplateFiles(string sourceFolder, string destinationFolder)
         {
             if (!Directory.Exists(sourceFolder))
@@ -502,12 +463,6 @@ namespace UnityEssentials
             }
         }
 
-        /// <summary>
-        /// Represents the configuration data for an assembly definition, including metadata and build settings.
-        /// </summary>
-        /// <remarks>This class is used to define the properties and settings of an assembly definition
-        /// file, such as its name,  references, platform constraints, and other build-related options. It is typically
-        /// used in the context of  managing assemblies in a project, such as Unity projects.</remarks>
         [System.Serializable]
         public class AssemblyDefinitionData
         {
@@ -525,13 +480,6 @@ namespace UnityEssentials
             public object[] versionDefines = new object[] { };
         }
 
-        /// <summary>
-        /// Represents metadata and configuration information for a Unity package.
-        /// </summary>
-        /// <remarks>This class is used to define the essential details of a Unity package, including its
-        /// name, version,  display name, description, Unity version compatibility, and associated URLs for
-        /// documentation,  changelogs, and licenses. It also includes dependency information and keywords for
-        /// categorization.</remarks>
         [System.Serializable]
         public class PackageData
         {
@@ -543,16 +491,10 @@ namespace UnityEssentials
             public string documentationUrl = "";
             public string changelogUrl = "";
             public string licensesUrl = "";
-            public string dependencies = " { \"com.unityessentials.core\": \"1.0.0\" } ";
             public string[] keywords = new string[] { };
             public AuthorInfo author = new();
         }
 
-        /// <summary>
-        /// Represents information about an author, including their name, email, and website URL.
-        /// </summary>
-        /// <remarks>This class is used to store and manage basic details about an author.  All fields are
-        /// publicly accessible and can be modified directly.</remarks>
         [System.Serializable]
         public class AuthorInfo
         {
