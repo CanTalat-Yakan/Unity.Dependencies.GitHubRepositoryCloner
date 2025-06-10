@@ -83,6 +83,8 @@ namespace UnityEssentials
                 {
                     FetchRepositories();
 
+                    EditorGUILayout.LabelField("Fetching...");
+
                     return; // Early return because no repositories to show yet
                 }
                 else if (s_repositoryNames.Count > 0)
