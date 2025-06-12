@@ -21,8 +21,11 @@ namespace UnityEssentials
     public class GitHubRepositoryCloner : EditorWindow
     {
         private const string TemplateFolder = "Assets/Templates";
-        private const string AuthorName = "Unity Essentials";
-        private const string ProjectName = "UnityEssentials";
+        private const string DefaultAuthorName = "Unity Essentials";
+        private const string DefaultOrganizationName = "UnityEssentials";
+        private const string DefaultDescription = "This is a part of the UnityEssentials Ecosystem";
+        private const string DefaultDependency = "com.unityessentials.core";
+        private const string DefaultDependencyVersion = "1.0.0";
         private const string ExcludeString = "Unity";
         private const string TokenKey = "GitToken";
 
@@ -414,23 +417,17 @@ namespace UnityEssentials
             // Create new .asmdef with the correct name
             var asmdefData = new AssemblyDefinitionData
             {
-                name = $"{ProjectName}.{packageName}"
+                name = $"{DefaultOrganizationName}.{packageName}"
             };
 
-            string asmdefPath = Path.Combine(localPath, $"{ProjectName}.{packageName}.asmdef");
+            string asmdefPath = Path.Combine(localPath, $"{DefaultOrganizationName}.{packageName}.asmdef");
             string json = JsonUtility.ToJson(asmdefData, true);
             File.WriteAllText(asmdefPath, json);
         }
 
         private void CreatePackageManifest(string localPath, string packageName)
         {
-            var packageData = new PackageData
-            {
-                name = $"com.{ProjectName.ToLower()}.{packageName.ToLower()}",
-                displayName = $"{ProjectName} {packageName}"
-            };
-
-            var json = JsonUtility.ToJson(packageData, true);
+            var json = DefaultPackageManifestToJson(packageName);
 
             // Write to package.json file
             string packageJsonPath = Path.Combine(localPath, "package.json");
@@ -463,6 +460,19 @@ namespace UnityEssentials
             }
         }
 
+        private string DefaultPackageManifestToJson(string packageName)
+        {
+            var manifest = new PackageManifestEditor.PackageJson();
+            manifest.name = $"com.{DefaultOrganizationName.ToLower()}.{packageName.ToLower()}";
+            manifest.displayName = $"{DefaultOrganizationName} {packageName}";
+            manifest.version = "1.0.0";
+            manifest.description = DefaultDescription;
+            manifest.author = new() { name = DefaultAuthorName };
+            manifest.dependencies = new() { { DefaultDependency, DefaultDependencyVersion } };
+
+            return manifest.ToJson();
+        }
+
         [System.Serializable]
         public class AssemblyDefinitionData
         {
@@ -471,36 +481,13 @@ namespace UnityEssentials
             public bool noEngineReferences = false;
             public bool overrideReferences = false;
             public bool autoReferenced = true;
-            public string rootNamespace = ProjectName;
+            public string rootNamespace = DefaultOrganizationName;
             public string[] references = new string[] { };
             public string[] precompiledReferences = new string[] { };
             public string[] includePlatforms = new string[] { };
             public string[] excludePlatforms = new string[] { };
             public string[] defineConstraints = new string[] { };
             public object[] versionDefines = new object[] { };
-        }
-
-        [System.Serializable]
-        public class PackageData
-        {
-            public string name;
-            public string version = "1.0.0";
-            public string displayName;
-            public string description = $"This is a part of the {ProjectName} Ecosystem";
-            public string unity = "2022.1";
-            public string documentationUrl = "";
-            public string changelogUrl = "";
-            public string licensesUrl = "";
-            public string[] keywords = new string[] { };
-            public AuthorInfo author = new();
-        }
-
-        [System.Serializable]
-        public class AuthorInfo
-        {
-            public string name = AuthorName;
-            public string email = "";
-            public string url = "";
         }
     }
 }

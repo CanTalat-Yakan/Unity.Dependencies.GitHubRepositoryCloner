@@ -1,7 +1,9 @@
 {
     "name": "UnityEssentials.GitHubRepositoryCloner.Editor",
     "rootNamespace": "UnityEssentials",
-    "references": [],
+    "references": [
+        "GUID:8371eff2f941e1c4387a594e4777a1fc"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
