@@ -96,7 +96,7 @@ namespace UnityEssentials
                 else if (s_repositoryNames.Count > 0)
                 {
                     GUILayout.BeginHorizontal();
-                    GUILayout.Label("Select repositories to clone:");
+                    GUILayout.Label("Filter repositories by name:");
                     if (GUILayout.Button("Refresh", GUILayout.Width(100), GUILayout.Height(18)))
                     {
                         FetchRepositories();
@@ -106,7 +106,6 @@ namespace UnityEssentials
 
 
                     GUILayout.Space(4);
-                    GUILayout.Label("Filter repositories by name:");
                     string oldFilter = _repositoryNameFilter;
                     _repositoryNameFilter = EditorGUILayout.TextField(_repositoryNameFilter);
                     if (_repositoryNameFilter != oldFilter)
@@ -120,7 +119,7 @@ namespace UnityEssentials
                     float headerHeight = EditorGUIUtility.singleLineHeight * 3 + 30;
                     float toggleTemplateHeight = EditorGUIUtility.singleLineHeight + 6;
                     float buttonHeight = 30 + 20;
-                    float padding = 20;
+                    float padding = 40;
                     float scrollHeight = totalHeight - (headerHeight + toggleTemplateHeight + buttonHeight + padding);
                     scrollHeight = Mathf.Max(scrollHeight, 100);
 
@@ -145,7 +144,7 @@ namespace UnityEssentials
 
                     GUILayout.FlexibleSpace();
 
-                    if (GUILayout.Button("Clone Selected Repositories", GUILayout.Height(30)))
+                    if (GUILayout.Button("Clone Selected Repositories", GUILayout.Height(27)))
                     {
                         string targetPath = Application.dataPath;
                         CloneSelectedRepositories(targetPath);
