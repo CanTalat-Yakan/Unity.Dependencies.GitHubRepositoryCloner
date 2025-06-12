@@ -23,6 +23,7 @@ namespace UnityEssentials
         private const string TemplateFolder = "Assets/Templates";
         private const string DefaultAuthorName = "Unity Essentials";
         private const string DefaultOrganizationName = "UnityEssentials";
+        private const string DefaultUnityVersion = "2022.1";
         private const string DefaultDescription = "This is a part of the UnityEssentials Ecosystem";
         private const string DefaultDependency = "com.unityessentials.core";
         private const string DefaultDependencyVersion = "1.0.0";
@@ -465,6 +466,7 @@ namespace UnityEssentials
             var manifest = new PackageManifestEditor.PackageJson();
             manifest.name = $"com.{DefaultOrganizationName.ToLower()}.{packageName.ToLower()}";
             manifest.displayName = $"{DefaultOrganizationName} {packageName}";
+            manifest.unity = DefaultUnityVersion;
             manifest.version = "1.0.0";
             manifest.description = DefaultDescription;
             manifest.author = new() { name = DefaultAuthorName };
