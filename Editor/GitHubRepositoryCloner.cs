@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
+using System.Linq;
 using Debug = UnityEngine.Debug;
 
 namespace UnityEssentials
@@ -42,6 +43,7 @@ namespace UnityEssentials
         private bool _useTemplateFiles = true;
 
         private string _tokenPlaceholder = string.Empty;
+        private string _repositoryNameFilter = string.Empty;
 
         [MenuItem("Tools/GitHub Repository Cloner")]
         public static void ShowWindow()
@@ -101,6 +103,17 @@ namespace UnityEssentials
                         GUI.FocusControl(null); // Remove focus from button to avoid accidental double-clicks
                     }
                     GUILayout.EndHorizontal();
+
+
+                    GUILayout.Space(4);
+                    GUILayout.Label("Filter repositories by name:");
+                    string oldFilter = _repositoryNameFilter;
+                    _repositoryNameFilter = EditorGUILayout.TextField(_repositoryNameFilter);
+                    if (_repositoryNameFilter != oldFilter)
+                    {
+                        FetchRepositories();
+                        return;
+                    }
 
                     // Calculate space for the scroll view dynamically
                     float totalHeight = position.height;
@@ -182,7 +195,13 @@ namespace UnityEssentials
             }
 
             string json = await response.Content.ReadAsStringAsync();
-            s_repositoryNames = ExtractRepositoryNames(json);
+            var allRepositories = ExtractRepositoryNames(json);
+
+            // Filter out repositories that already exist anywhere in Assets
+            var filteredByExistence = FilterExistingRepositories(allRepositories);
+
+            // Further filter by the repository name filter
+            s_repositoryNames = FilterByName(filteredByExistence, _repositoryNameFilter);
 
             // Reset selection list
             s_repositorySelected = new List<bool>(new bool[s_repositoryNames.Count]);
@@ -216,6 +235,43 @@ namespace UnityEssentials
             }
 
             return names;
+        }
+
+        /// <summary>
+        /// Filters out repositories that already exist anywhere in the Assets folder.
+        /// </summary>
+        private List<string> FilterExistingRepositories(List<string> repoFullNames)
+        {
+            string assetsPath = Application.dataPath;
+            var existingFolders = new HashSet<string>(
+                Directory.GetDirectories(assetsPath, "*", SearchOption.AllDirectories)
+                    .Select(path => Path.GetFileName(path))
+            );
+
+            var filtered = new List<string>();
+            foreach (var fullName in repoFullNames)
+            {
+                string repoFolderName = fullName.Split('/')[1];
+                if (!existingFolders.Contains(repoFolderName))
+                    filtered.Add(fullName);
+            }
+            return filtered;
+        }
+
+        /// <summary>
+        /// Filters the list of repository names based on the provided filter string.
+        /// </summary>
+        /// <param name="repoFullNames">The list of repository full names to filter.</param>
+        /// <param name="filter">The filter string to apply. If empty or null, no filtering is applied.</param>
+        /// <returns>A list of repository names that match the filter string.</returns>
+        private List<string> FilterByName(List<string> repoFullNames, string filter)
+        {
+            if (string.IsNullOrEmpty(filter))
+                return repoFullNames;
+
+            return repoFullNames
+                .Where(name => name.IndexOf(filter, System.StringComparison.OrdinalIgnoreCase) >= 0)
+                .ToList();
         }
 
         /// <summary>
