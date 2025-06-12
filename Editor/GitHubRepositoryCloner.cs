@@ -33,6 +33,7 @@ namespace UnityEssentials
 
         private static string s_token;
         private static List<string> s_repositoryNames = new();
+        private static List<string> s_allRepositoryNames = new();
         private static List<bool> s_repositorySelected = new();
         private bool _isFetching = false;
 
@@ -81,39 +82,44 @@ namespace UnityEssentials
                     s_token = "";
                     EditorPrefs.DeleteKey(TokenKey);
                     s_repositoryNames.Clear();
+                    s_allRepositoryNames.Clear();
                     s_repositorySelected.Clear();
                     return;
                 }
 
-                if (s_repositoryNames.Count == 0 && !_isFetching)
+                if (_isFetching)
+                {
+                    GUILayout.Label("Fetching...");
+                    return;
+                }
+
+                // Filter UI (always visible)
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Filter repositories by name:");
+                if (GUILayout.Button("Refresh", GUILayout.Width(100), GUILayout.Height(18)))
                 {
                     FetchRepositories();
+                    GUI.FocusControl(null);
+                }
+                GUILayout.EndHorizontal();
 
-                    EditorGUILayout.LabelField("Fetching...");
+                GUILayout.Space(4);
+                string oldFilter = _repositoryNameFilter;
+                _repositoryNameFilter = EditorGUILayout.TextField(_repositoryNameFilter);
+                if (_repositoryNameFilter != oldFilter)
+                {
+                    // Only filter locally, do not fetch
+                    s_repositoryNames = FilterByName(s_allRepositoryNames, _repositoryNameFilter);
+                    s_repositorySelected = new List<bool>(new bool[s_repositoryNames.Count]);
+                }
 
-                    return; // Early return because no repositories to show yet
+                if (s_repositoryNames.Count == 0)
+                {
+                    GUILayout.Label("No repositories found matching the filter.");
+                    return;
                 }
                 else if (s_repositoryNames.Count > 0)
                 {
-                    GUILayout.BeginHorizontal();
-                    GUILayout.Label("Filter repositories by name:");
-                    if (GUILayout.Button("Refresh", GUILayout.Width(100), GUILayout.Height(18)))
-                    {
-                        FetchRepositories();
-                        GUI.FocusControl(null); // Remove focus from button to avoid accidental double-clicks
-                    }
-                    GUILayout.EndHorizontal();
-
-
-                    GUILayout.Space(4);
-                    string oldFilter = _repositoryNameFilter;
-                    _repositoryNameFilter = EditorGUILayout.TextField(_repositoryNameFilter);
-                    if (_repositoryNameFilter != oldFilter)
-                    {
-                        FetchRepositories();
-                        return;
-                    }
-
                     // Calculate space for the scroll view dynamically
                     float totalHeight = position.height;
                     float headerHeight = EditorGUIUtility.singleLineHeight * 3 + 30;
@@ -144,7 +150,7 @@ namespace UnityEssentials
 
                     GUILayout.FlexibleSpace();
 
-                    if (GUILayout.Button("Clone Selected Repositories", GUILayout.Height(27)))
+                    if (GUILayout.Button("Clone Selected Repositories", GUILayout.Height(24)))
                     {
                         string targetPath = Application.dataPath;
                         CloneSelectedRepositories(targetPath);
@@ -187,6 +193,7 @@ namespace UnityEssentials
                 EditorPrefs.DeleteKey(TokenKey);
                 s_token = "";
                 s_repositoryNames.Clear();
+                s_allRepositoryNames.Clear();
                 s_repositorySelected.Clear();
                 _isFetching = false;
                 Repaint();
@@ -199,8 +206,11 @@ namespace UnityEssentials
             // Filter out repositories that already exist anywhere in Assets
             var filteredByExistence = FilterExistingRepositories(allRepositories);
 
-            // Further filter by the repository name filter
-            s_repositoryNames = FilterByName(filteredByExistence, _repositoryNameFilter);
+            // Store all fetched repositories
+            s_allRepositoryNames = filteredByExistence;
+
+            // Apply current filter
+            s_repositoryNames = FilterByName(s_allRepositoryNames, _repositoryNameFilter);
 
             // Reset selection list
             s_repositorySelected = new List<bool>(new bool[s_repositoryNames.Count]);
