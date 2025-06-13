@@ -20,23 +20,22 @@ namespace UnityEssentials
     /// Assets folder. Additional options include creating assembly definition files, package manifests, and copying
     /// template files for the cloned repositories.  To use this tool, navigate to the "Tools" menu in the Unity Editor
     /// and select "GitHub Repository Cloner".</remarks>
-    public class GitHubRepositoryCloner
+    public partial class GitHubRepositoryCloner
     {
-        public string Token;
-        public List<string> RepositoryNames = new();
-        public List<string> AllRepositoryNames = new();
-        public List<bool> RepositorySelected = new();
-        public bool IsFetching = false;
+        public string _token;
+        public List<string> _repositoryNames = new();
+        public List<string> _allRepositoryNames = new();
+        public List<bool> _repositorySelected = new();
+        public bool _isFetching = false;
 
-        public bool ShouldCreateAssemblyDefinition = true;
-        public bool ShouldCreatePackageManifests = true;
-        public bool ShouldUseTemplateFiles = true;
+        public bool _shouldCreateAssemblyDefinition = true;
+        public bool _shouldCreatePackageManifests = true;
+        public bool _shouldUseTemplateFiles = true;
 
-        public string TokenPlaceholder = string.Empty;
-        public string RepositoryNameFilter = string.Empty;
+        private string _tokenPlaceholder = string.Empty;
+        private string _repositoryNameFilter = string.Empty;
 
-        public const string TokenKey = "GitToken";
-
+        private const string TokenKey = "GitToken";
         private const string TemplateFolder = "Assets/Templates";
         private const string DefaultAuthorName = "Unity Essentials";
         private const string DefaultOrganizationName = "UnityEssentials";
@@ -49,11 +48,11 @@ namespace UnityEssentials
         public GitHubRepositoryCloner()
         {
             // Restore token from EditorPrefs if needed
-            if (string.IsNullOrEmpty(Token))
-                Token = EditorPrefs.GetString(TokenKey, "");
+            if (string.IsNullOrEmpty(_token))
+                _token = EditorPrefs.GetString(TokenKey, "");
 
             // If we have a token, fetch repositories automatically
-            if (!string.IsNullOrEmpty(Token) && RepositoryNames.Count == 0 && !IsFetching)
+            if (!string.IsNullOrEmpty(_token) && _repositoryNames.Count == 0 && !_isFetching)
                 FetchRepositories();
         }
 
@@ -66,31 +65,31 @@ namespace UnityEssentials
         /// successful retrieval.</remarks>
         public async void FetchRepositories(Action repaint = null)
         {
-            IsFetching = true;
+            _isFetching = true;
             repaint?.Invoke();
 
-            if (string.IsNullOrEmpty(Token))
+            if (string.IsNullOrEmpty(_token))
             {
                 Debug.LogWarning("[Git] Token is empty.");
-                IsFetching = false;
+                _isFetching = false;
                 repaint?.Invoke();
                 return;
             }
 
             using var client = new HttpClient();
             client.DefaultRequestHeaders.UserAgent.ParseAdd("UnityGitClient");
-            client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("token", Token);
+            client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("token", _token);
 
             var response = await client.GetAsync("https://api.github.com/user/repos?per_page=100");
             if (!response.IsSuccessStatusCode)
             {
                 Debug.LogError("[Git] Invalid token or failed to fetch repositories. Clearing token.");
                 EditorPrefs.DeleteKey(TokenKey);
-                Token = "";
-                RepositoryNames.Clear();
-                AllRepositoryNames.Clear();
-                RepositorySelected.Clear();
-                IsFetching = false;
+                _token = "";
+                _repositoryNames.Clear();
+                _allRepositoryNames.Clear();
+                _repositorySelected.Clear();
+                _isFetching = false;
                 repaint?.Invoke();
                 return;
             }
@@ -102,15 +101,15 @@ namespace UnityEssentials
             var filteredByExistence = FilterExistingRepositories(allRepositories);
 
             // Store all fetched repositories
-            AllRepositoryNames = filteredByExistence;
+            _allRepositoryNames = filteredByExistence;
 
             // Apply current filter
-            RepositoryNames = FilterByName(AllRepositoryNames, RepositoryNameFilter);
+            _repositoryNames = FilterByName(_allRepositoryNames, _repositoryNameFilter);
 
             // Reset selection list
-            RepositorySelected = new List<bool>(new bool[RepositoryNames.Count]);
+            _repositorySelected = new List<bool>(new bool[_repositoryNames.Count]);
 
-            IsFetching = false;
+            _isFetching = false;
             repaint?.Invoke();
         }
 
@@ -194,9 +193,9 @@ namespace UnityEssentials
         {
             var selectedRepositories = new List<string>();
 
-            for (int i = 0; i < RepositoryNames.Count; i++)
-                if (RepositorySelected[i])
-                    selectedRepositories.Add(RepositoryNames[i]);
+            for (int i = 0; i < _repositoryNames.Count; i++)
+                if (_repositorySelected[i])
+                    selectedRepositories.Add(_repositoryNames[i]);
 
             if (selectedRepositories.Count == 0)
             {
@@ -209,7 +208,7 @@ namespace UnityEssentials
 
             foreach (var repositoryFullName in selectedRepositories)
             {
-                string cloneUrl = $"https://{Token}@github.com/{repositoryFullName}.git"; // Include token in URL
+                string cloneUrl = $"https://{_token}@github.com/{repositoryFullName}.git"; // Include token in URL
                 string repositoryFolderName = repositoryFullName.Split('/')[1];
                 string packageName = repositoryFolderName.Replace(ExcludeString, "");
                 string localPath = Path.Combine(targetFolder, repositoryFolderName);
@@ -233,13 +232,13 @@ namespace UnityEssentials
 
                     RenameLicenseFile(localPath, repositoryFullName);
 
-                    if (ShouldCreateAssemblyDefinition)
+                    if (_shouldCreateAssemblyDefinition)
                         CreateAssemblyDefinition(localPath, packageName);
 
-                    if (ShouldCreatePackageManifests)
+                    if (_shouldCreatePackageManifests)
                         CreatePackageManifest(localPath, packageName);
 
-                    if (ShouldUseTemplateFiles)
+                    if (_shouldUseTemplateFiles)
                         CopyTemplateFiles(TemplateFolder, localPath);
                 }
                 else Debug.LogError($"Failed to clone repository: {repositoryFullName}");
@@ -420,7 +419,7 @@ namespace UnityEssentials
 
         private string DefaultPackageManifestToJson(string packageName)
         {
-            var manifest = new PackageManifestEditor.PackageJson();
+            var manifest = new PackageManifest.PackageJson();
             manifest.name = $"com.{DefaultOrganizationName.ToLower()}.{packageName.ToLower()}";
             manifest.displayName = $"{DefaultOrganizationName} {packageName}";
             manifest.unity = DefaultUnityVersion;
