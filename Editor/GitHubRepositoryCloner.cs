@@ -53,6 +53,17 @@ namespace UnityEssentials
             window.minSize = new Vector2(400, 300);
         }
 
+        private void OnEnable()
+        {
+            // Restore token from EditorPrefs if needed
+            if (string.IsNullOrEmpty(s_token))
+                s_token = EditorPrefs.GetString(TokenKey, "");
+
+            // If we have a token, fetch repositories automatically
+            if (!string.IsNullOrEmpty(s_token) && s_repositoryNames.Count == 0 && !_isFetching)
+                FetchRepositories();
+        }
+
         public void OnGUI()
         {
             if (string.IsNullOrEmpty(s_token))
@@ -124,9 +135,8 @@ namespace UnityEssentials
                     float totalHeight = position.height;
                     float headerHeight = EditorGUIUtility.singleLineHeight * 3 + 30;
                     float toggleTemplateHeight = EditorGUIUtility.singleLineHeight + 6;
-                    float buttonHeight = 30 + 20;
-                    float padding = 40;
-                    float scrollHeight = totalHeight - (headerHeight + toggleTemplateHeight + buttonHeight + padding);
+                    float buttonHeight = 90;
+                    float scrollHeight = totalHeight - (headerHeight + toggleTemplateHeight + buttonHeight);
                     scrollHeight = Mathf.Max(scrollHeight, 100);
 
                     using (new GUILayout.VerticalScope("box"))
@@ -150,11 +160,16 @@ namespace UnityEssentials
 
                     GUILayout.FlexibleSpace();
 
+                    GUI.enabled = s_repositorySelected.Any(selected => selected);
                     if (GUILayout.Button("Clone Selected Repositories", GUILayout.Height(24)))
                     {
                         string targetPath = Application.dataPath;
                         CloneSelectedRepositories(targetPath);
+
+                        FetchRepositories();
+                        GUI.FocusControl(null);
                     }
+                    GUI.enabled = true;
 
                     GUILayout.Space(10);
                 }
@@ -186,7 +201,6 @@ namespace UnityEssentials
             client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("token", s_token);
 
             var response = await client.GetAsync("https://api.github.com/user/repos?per_page=100");
-
             if (!response.IsSuccessStatusCode)
             {
                 Debug.LogError("[Git] Invalid token or failed to fetch repositories. Clearing token.");
