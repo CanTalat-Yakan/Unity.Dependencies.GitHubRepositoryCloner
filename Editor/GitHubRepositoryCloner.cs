@@ -8,6 +8,7 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Linq;
 using Debug = UnityEngine.Debug;
+using System;
 
 namespace UnityEssentials
 {
@@ -19,8 +20,23 @@ namespace UnityEssentials
     /// Assets folder. Additional options include creating assembly definition files, package manifests, and copying
     /// template files for the cloned repositories.  To use this tool, navigate to the "Tools" menu in the Unity Editor
     /// and select "GitHub Repository Cloner".</remarks>
-    public class GitHubRepositoryCloner : EditorWindow
+    public class GitHubRepositoryCloner
     {
+        public string Token;
+        public List<string> RepositoryNames = new();
+        public List<string> AllRepositoryNames = new();
+        public List<bool> RepositorySelected = new();
+        public bool IsFetching = false;
+
+        public bool ShouldCreateAssemblyDefinition = true;
+        public bool ShouldCreatePackageManifests = true;
+        public bool ShouldUseTemplateFiles = true;
+
+        public string TokenPlaceholder = string.Empty;
+        public string RepositoryNameFilter = string.Empty;
+
+        public const string TokenKey = "GitToken";
+
         private const string TemplateFolder = "Assets/Templates";
         private const string DefaultAuthorName = "Unity Essentials";
         private const string DefaultOrganizationName = "UnityEssentials";
@@ -29,151 +45,16 @@ namespace UnityEssentials
         private const string DefaultDependency = "com.unityessentials.core";
         private const string DefaultDependencyVersion = "1.0.0";
         private const string ExcludeString = "Unity";
-        private const string TokenKey = "GitToken";
 
-        private static string s_token;
-        private static List<string> s_repositoryNames = new();
-        private static List<string> s_allRepositoryNames = new();
-        private static List<bool> s_repositorySelected = new();
-        private bool _isFetching = false;
-
-        private Vector2 _scrollPosition;
-
-        private bool _createAssemblyDefinition = true;
-        private bool _createPackageManifests = true;
-        private bool _useTemplateFiles = true;
-
-        private string _tokenPlaceholder = string.Empty;
-        private string _repositoryNameFilter = string.Empty;
-
-        [MenuItem("Tools/GitHub Repository Cloner")]
-        public static void ShowWindow()
-        {
-            var window = GetWindow<GitHubRepositoryCloner>();
-            window.minSize = new Vector2(400, 300);
-        }
-
-        private void OnEnable()
+        public GitHubRepositoryCloner()
         {
             // Restore token from EditorPrefs if needed
-            if (string.IsNullOrEmpty(s_token))
-                s_token = EditorPrefs.GetString(TokenKey, "");
+            if (string.IsNullOrEmpty(Token))
+                Token = EditorPrefs.GetString(TokenKey, "");
 
             // If we have a token, fetch repositories automatically
-            if (!string.IsNullOrEmpty(s_token) && s_repositoryNames.Count == 0 && !_isFetching)
+            if (!string.IsNullOrEmpty(Token) && RepositoryNames.Count == 0 && !IsFetching)
                 FetchRepositories();
-        }
-
-        public void OnGUI()
-        {
-            if (string.IsNullOrEmpty(s_token))
-                s_token = EditorPrefs.GetString(TokenKey, "");
-
-            GUILayout.Space(10);
-
-            if (string.IsNullOrEmpty(s_token))
-            {
-                GUILayout.Label("Enter your GitHub token:");
-
-                _tokenPlaceholder = EditorGUILayout.TextField(_tokenPlaceholder);
-
-                if (GUILayout.Button("Save Token"))
-                {
-                    s_token = _tokenPlaceholder;
-                    EditorPrefs.SetString(TokenKey, s_token);
-
-                    FetchRepositories();
-                }
-                return; // Early return since no repositories to show yet
-            }
-            else
-            {
-                if (GUILayout.Button("Change Token"))
-                {
-                    s_token = "";
-                    EditorPrefs.DeleteKey(TokenKey);
-                    s_repositoryNames.Clear();
-                    s_allRepositoryNames.Clear();
-                    s_repositorySelected.Clear();
-                    return;
-                }
-
-                if (_isFetching)
-                {
-                    GUILayout.Label("Fetching...");
-                    return;
-                }
-
-                // Filter UI (always visible)
-                GUILayout.BeginHorizontal();
-                GUILayout.Label("Filter repositories by name:");
-                if (GUILayout.Button("Refresh", GUILayout.Width(100), GUILayout.Height(18)))
-                {
-                    FetchRepositories();
-                    GUI.FocusControl(null);
-                }
-                GUILayout.EndHorizontal();
-
-                GUILayout.Space(4);
-                string oldFilter = _repositoryNameFilter;
-                _repositoryNameFilter = EditorGUILayout.TextField(_repositoryNameFilter);
-                if (_repositoryNameFilter != oldFilter)
-                {
-                    // Only filter locally, do not fetch
-                    s_repositoryNames = FilterByName(s_allRepositoryNames, _repositoryNameFilter);
-                    s_repositorySelected = new List<bool>(new bool[s_repositoryNames.Count]);
-                }
-
-                if (s_repositoryNames.Count == 0)
-                {
-                    GUILayout.Label("No repositories found matching the filter.");
-                    return;
-                }
-                else if (s_repositoryNames.Count > 0)
-                {
-                    // Calculate space for the scroll view dynamically
-                    float totalHeight = position.height;
-                    float headerHeight = EditorGUIUtility.singleLineHeight * 3 + 30;
-                    float toggleTemplateHeight = EditorGUIUtility.singleLineHeight + 6;
-                    float buttonHeight = 90;
-                    float scrollHeight = totalHeight - (headerHeight + toggleTemplateHeight + buttonHeight);
-                    scrollHeight = Mathf.Max(scrollHeight, 100);
-
-                    using (new GUILayout.VerticalScope("box"))
-                    {
-                        _scrollPosition = EditorGUILayout.BeginScrollView(_scrollPosition, GUILayout.Height(scrollHeight));
-                        for (int i = 0; i < s_repositoryNames.Count; i++)
-                        {
-                            if (s_repositorySelected.Count < s_repositoryNames.Count)
-                                s_repositorySelected.Add(false);
-
-                            s_repositorySelected[i] = EditorGUILayout.ToggleLeft(s_repositoryNames[i], s_repositorySelected[i]);
-                        }
-                        EditorGUILayout.EndScrollView();
-                    }
-
-                    GUILayout.Space(10);
-
-                    _createAssemblyDefinition = EditorGUILayout.ToggleLeft("Create Assembly Definitions", _createAssemblyDefinition);
-                    _createPackageManifests = EditorGUILayout.ToggleLeft("Create Package Manifests", _createPackageManifests);
-                    _useTemplateFiles = EditorGUILayout.ToggleLeft("Copy Template Files", _useTemplateFiles);
-
-                    GUILayout.FlexibleSpace();
-
-                    GUI.enabled = s_repositorySelected.Any(selected => selected);
-                    if (GUILayout.Button("Clone Selected Repositories", GUILayout.Height(24)))
-                    {
-                        string targetPath = Application.dataPath;
-                        CloneSelectedRepositories(targetPath);
-
-                        FetchRepositories();
-                        GUI.FocusControl(null);
-                    }
-                    GUI.enabled = true;
-
-                    GUILayout.Space(10);
-                }
-            }
         }
 
         /// <summary>
@@ -183,34 +64,34 @@ namespace UnityEssentials
         /// the provided token. If the token is invalid or empty, the method logs a warning or error, clears the token,
         /// and resets the repository lists. The method updates the repository names and selection states upon
         /// successful retrieval.</remarks>
-        private async void FetchRepositories()
+        public async void FetchRepositories(Action repaint = null)
         {
-            _isFetching = true;
-            Repaint();
+            IsFetching = true;
+            repaint?.Invoke();
 
-            if (string.IsNullOrEmpty(s_token))
+            if (string.IsNullOrEmpty(Token))
             {
                 Debug.LogWarning("[Git] Token is empty.");
-                _isFetching = false;
-                Repaint();
+                IsFetching = false;
+                repaint?.Invoke();
                 return;
             }
 
             using var client = new HttpClient();
             client.DefaultRequestHeaders.UserAgent.ParseAdd("UnityGitClient");
-            client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("token", s_token);
+            client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("token", Token);
 
             var response = await client.GetAsync("https://api.github.com/user/repos?per_page=100");
             if (!response.IsSuccessStatusCode)
             {
                 Debug.LogError("[Git] Invalid token or failed to fetch repositories. Clearing token.");
                 EditorPrefs.DeleteKey(TokenKey);
-                s_token = "";
-                s_repositoryNames.Clear();
-                s_allRepositoryNames.Clear();
-                s_repositorySelected.Clear();
-                _isFetching = false;
-                Repaint();
+                Token = "";
+                RepositoryNames.Clear();
+                AllRepositoryNames.Clear();
+                RepositorySelected.Clear();
+                IsFetching = false;
+                repaint?.Invoke();
                 return;
             }
 
@@ -221,16 +102,16 @@ namespace UnityEssentials
             var filteredByExistence = FilterExistingRepositories(allRepositories);
 
             // Store all fetched repositories
-            s_allRepositoryNames = filteredByExistence;
+            AllRepositoryNames = filteredByExistence;
 
             // Apply current filter
-            s_repositoryNames = FilterByName(s_allRepositoryNames, _repositoryNameFilter);
+            RepositoryNames = FilterByName(AllRepositoryNames, RepositoryNameFilter);
 
             // Reset selection list
-            s_repositorySelected = new List<bool>(new bool[s_repositoryNames.Count]);
+            RepositorySelected = new List<bool>(new bool[RepositoryNames.Count]);
 
-            _isFetching = false;
-            Repaint();
+            IsFetching = false;
+            repaint?.Invoke();
         }
 
         /// <summary>
@@ -263,7 +144,7 @@ namespace UnityEssentials
         /// <summary>
         /// Filters out repositories that already exist anywhere in the Assets folder.
         /// </summary>
-        private List<string> FilterExistingRepositories(List<string> repoFullNames)
+        private List<string> FilterExistingRepositories(List<string> repositoryFullNames)
         {
             string assetsPath = Application.dataPath;
             var existingFolders = new HashSet<string>(
@@ -272,7 +153,7 @@ namespace UnityEssentials
             );
 
             var filtered = new List<string>();
-            foreach (var fullName in repoFullNames)
+            foreach (var fullName in repositoryFullNames)
             {
                 string repoFolderName = fullName.Split('/')[1];
                 if (!existingFolders.Contains(repoFolderName))
@@ -284,15 +165,15 @@ namespace UnityEssentials
         /// <summary>
         /// Filters the list of repository names based on the provided filter string.
         /// </summary>
-        /// <param name="repoFullNames">The list of repository full names to filter.</param>
+        /// <param name="repositoryFullNames">The list of repository full names to filter.</param>
         /// <param name="filter">The filter string to apply. If empty or null, no filtering is applied.</param>
         /// <returns>A list of repository names that match the filter string.</returns>
-        private List<string> FilterByName(List<string> repoFullNames, string filter)
+        public List<string> FilterByName(List<string> repositoryFullNames, string filter)
         {
             if (string.IsNullOrEmpty(filter))
-                return repoFullNames;
+                return repositoryFullNames;
 
-            return repoFullNames
+            return repositoryFullNames
                 .Where(name => name.IndexOf(filter, System.StringComparison.OrdinalIgnoreCase) >= 0)
                 .ToList();
         }
@@ -309,26 +190,26 @@ namespace UnityEssentials
         /// performed on the main thread.  A progress bar is displayed during the cloning process, and the Unity asset
         /// database is refreshed  upon completion.</remarks>
         /// <param name="targetFolder">The path to the target folder where the repositories will be cloned. This must be a valid directory path.</param>
-        private async void CloneSelectedRepositories(string targetFolder)
+        public async void CloneSelectedRepositories(string targetFolder)
         {
-            List<string> selectedRepos = new();
+            var selectedRepositories = new List<string>();
 
-            for (int i = 0; i < s_repositoryNames.Count; i++)
-                if (s_repositorySelected[i])
-                    selectedRepos.Add(s_repositoryNames[i]);
+            for (int i = 0; i < RepositoryNames.Count; i++)
+                if (RepositorySelected[i])
+                    selectedRepositories.Add(RepositoryNames[i]);
 
-            if (selectedRepos.Count == 0)
+            if (selectedRepositories.Count == 0)
             {
                 EditorUtility.DisplayDialog("No selection", "Please select at least one repository to clone.", "OK");
                 return;
             }
 
-            if (!EditorUtility.DisplayDialog("Confirm Clone", $"Clone {selectedRepos.Count} repositories into:\nAssets/ ?", "Yes", "Cancel"))
+            if (!EditorUtility.DisplayDialog("Confirm Clone", $"Clone {selectedRepositories.Count} repositories into:\nAssets/ ?", "Yes", "Cancel"))
                 return;
 
-            foreach (var repositoryFullName in selectedRepos)
+            foreach (var repositoryFullName in selectedRepositories)
             {
-                string cloneUrl = $"https://{s_token}@github.com/{repositoryFullName}.git"; // Include token in URL
+                string cloneUrl = $"https://{Token}@github.com/{repositoryFullName}.git"; // Include token in URL
                 string repositoryFolderName = repositoryFullName.Split('/')[1];
                 string packageName = repositoryFolderName.Replace(ExcludeString, "");
                 string localPath = Path.Combine(targetFolder, repositoryFolderName);
@@ -352,19 +233,16 @@ namespace UnityEssentials
 
                     RenameLicenseFile(localPath, repositoryFullName);
 
-                    if (_createAssemblyDefinition)
+                    if (ShouldCreateAssemblyDefinition)
                         CreateAssemblyDefinition(localPath, packageName);
 
-                    if (_createPackageManifests)
+                    if (ShouldCreatePackageManifests)
                         CreatePackageManifest(localPath, packageName);
 
-                    if (_useTemplateFiles)
+                    if (ShouldUseTemplateFiles)
                         CopyTemplateFiles(TemplateFolder, localPath);
                 }
-                else
-                {
-                    Debug.LogError($"Failed to clone repository: {repositoryFullName}");
-                }
+                else Debug.LogError($"Failed to clone repository: {repositoryFullName}");
 
                 EditorUtility.ClearProgressBar();
             }
