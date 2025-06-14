@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEssentials
 {
@@ -17,9 +18,9 @@ namespace UnityEssentials
         public static void ShowWindow()
         {
             var editor = new GitHubRepositoryCloner();
-            editor.Window = new EditorWindowDrawer("GitHub Repository Cloner", new(700, 800), new(400, 500))
-                .SetHeader(editor.Header)
-                .SetBody(editor.Body)
+            editor.Window = new EditorWindowDrawer("GitHub Repository Cloner", new(400, 500))
+                .SetHeader(editor.Header, EditorWindowDrawer.GUISkin.Toolbar)
+                .SetBody(editor.Body, EditorWindowDrawer.GUISkin.Margin)
                 .SetFooter(editor.Footer)
                 .GetRepaintEvent(out editor.Repaint)
                 .GetCloseEvent(out editor.Close)
@@ -41,18 +42,42 @@ namespace UnityEssentials
 
                     FetchRepositories(Repaint);
                 }
-                return; // Early return since no repositories to show yet
+                return;
             }
 
-            if (GUILayout.Button("Change Token"))
+            GUILayout.Space(4);
+
+            string oldFilter = _repositoryNameFilter;
+            _repositoryNameFilter = EditorGUILayout.TextField(_repositoryNameFilter, EditorStyles.toolbarSearchField);
+            if (_repositoryNameFilter != oldFilter)
+            {
+                // Only filter locally, do not fetch
+                _repositoryNames = FilterByName(_allRepositoryNames, _repositoryNameFilter);
+                _repositorySelected = new(new bool[_repositoryNames.Count]);
+            }
+
+            GUILayout.Space(4);
+
+            if (GUILayout.Button("Refresh Repositories", EditorStyles.toolbarButton))
+            {
+                FetchRepositories(Repaint);
+                GUI.FocusControl(null);
+            }
+
+            if (GUILayout.Button("Change Token", EditorStyles.toolbarButton))
             {
                 _token = "";
                 EditorPrefs.DeleteKey(TokenKey);
                 _repositoryNames.Clear();
                 _allRepositoryNames.Clear();
                 _repositorySelected.Clear();
-                return;
             }
+        }
+
+        public void Body()
+        {
+            if (string.IsNullOrEmpty(_token))
+                return;
 
             if (_isFetching)
             {
@@ -60,41 +85,24 @@ namespace UnityEssentials
                 return;
             }
 
-            GUILayout.BeginHorizontal();
-            {
-                GUILayout.Label("Filter repositories by name:");
-                if (GUILayout.Button("Refresh", GUILayout.Width(100), GUILayout.Height(18)))
-                {
-                    FetchRepositories(Repaint);
-                    GUI.FocusControl(null);
-                }
-            }
-            GUILayout.EndHorizontal();
-
-            string oldFilter = _repositoryNameFilter;
-            _repositoryNameFilter = EditorGUILayout.TextField(_repositoryNameFilter);
-            if (_repositoryNameFilter != oldFilter)
-            {
-                // Only filter locally, do not fetch
-                _repositoryNames = FilterByName(_allRepositoryNames, _repositoryNameFilter);
-                _repositorySelected = new List<bool>(new bool[_repositoryNames.Count]);
-            }
-        }
-
-        public void Body()
-        {
-            if (string.IsNullOrEmpty(_token))
-                return; // Early return since no repositories to show yet
-
-            if (_isFetching)
-                return;
-
             if (_repositoryNames.Count == 0)
             {
                 GUILayout.Label("No repositories found matching the filter.");
                 return;
             }
-            else if (_repositoryNames.Count > 0)
+
+            using (new GUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("All", GUILayout.Width(30)))
+                    for (int i = 0; i < _repositorySelected.Count; i++)
+                        _repositorySelected[i] = true;
+
+                if (GUILayout.Button("None", GUILayout.Width(40)))
+                    for (int i = 0; i < _repositorySelected.Count; i++)
+                        _repositorySelected[i] = false;
+            }
+
+            if (_repositoryNames.Count > 0)
             {
                 // Calculate space for the scroll view dynamically
                 float totalHeight = Window.position.height;
@@ -116,26 +124,27 @@ namespace UnityEssentials
 
         public void Footer()
         {
-            if (string.IsNullOrEmpty(_token))
-                return; // Early return since no repositories to show yet
-
-            if (_isFetching)
+            if (string.IsNullOrEmpty(_token) || _isFetching)
                 return;
 
-            _shouldCreateAssemblyDefinition = EditorGUILayout.ToggleLeft("Create Assembly Definitions", _shouldCreateAssemblyDefinition);
-            _shouldCreatePackageManifests = EditorGUILayout.ToggleLeft("Create Package Manifests", _shouldCreatePackageManifests);
-            _shouldUseTemplateFiles = EditorGUILayout.ToggleLeft("Copy Template Files", _shouldUseTemplateFiles);
+            if (!_repositorySelected.Any(selected => selected))
+                return;
 
-            GUI.enabled = _repositorySelected.Any(selected => selected);
-            if (GUILayout.Button("Clone Selected Repositories", GUILayout.Height(24)))
+            using (new GUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                string targetPath = Application.dataPath;
-                CloneSelectedRepositories(targetPath);
+                _shouldCreateAssemblyDefinition = EditorGUILayout.ToggleLeft("Create Assembly Definitions", _shouldCreateAssemblyDefinition);
+                _shouldCreatePackageManifests = EditorGUILayout.ToggleLeft("Create Package Manifests", _shouldCreatePackageManifests);
+                _shouldUseTemplateFiles = EditorGUILayout.ToggleLeft("Copy Template Files", _shouldUseTemplateFiles);
 
-                FetchRepositories(Repaint);
-                GUI.FocusControl(null);
+                if (GUILayout.Button("Clone Selected Repositories", GUILayout.Height(24)))
+                {
+                    string targetPath = Application.dataPath;
+                    CloneSelectedRepositories(targetPath);
+
+                    FetchRepositories(Repaint);
+                    GUI.FocusControl(null);
+                }
             }
-            GUI.enabled = true;
         }
     }
 }
