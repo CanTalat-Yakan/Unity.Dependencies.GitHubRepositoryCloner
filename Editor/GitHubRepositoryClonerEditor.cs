@@ -60,29 +60,25 @@ namespace UnityEssentials
                 return;
             }
 
-            GUILayout.BeginVertical();
+            GUILayout.BeginHorizontal();
             {
-                GUILayout.BeginHorizontal();
+                GUILayout.Label("Filter repositories by name:");
+                if (GUILayout.Button("Refresh", GUILayout.Width(100), GUILayout.Height(18)))
                 {
-                    GUILayout.Label("Filter repositories by name:");
-                    if (GUILayout.Button("Refresh", GUILayout.Width(100), GUILayout.Height(18)))
-                    {
-                        FetchRepositories(Repaint);
-                        GUI.FocusControl(null);
-                    }
-                }
-                GUILayout.EndHorizontal();
-
-                string oldFilter = _repositoryNameFilter;
-                _repositoryNameFilter = EditorGUILayout.TextField(_repositoryNameFilter);
-                if (_repositoryNameFilter != oldFilter)
-                {
-                    // Only filter locally, do not fetch
-                    _repositoryNames = FilterByName(_allRepositoryNames, _repositoryNameFilter);
-                    _repositorySelected = new List<bool>(new bool[_repositoryNames.Count]);
+                    FetchRepositories(Repaint);
+                    GUI.FocusControl(null);
                 }
             }
-            GUILayout.EndVertical();
+            GUILayout.EndHorizontal();
+
+            string oldFilter = _repositoryNameFilter;
+            _repositoryNameFilter = EditorGUILayout.TextField(_repositoryNameFilter);
+            if (_repositoryNameFilter != oldFilter)
+            {
+                // Only filter locally, do not fetch
+                _repositoryNames = FilterByName(_allRepositoryNames, _repositoryNameFilter);
+                _repositorySelected = new List<bool>(new bool[_repositoryNames.Count]);
+            }
         }
 
         public void Body()
@@ -120,11 +116,11 @@ namespace UnityEssentials
 
         public void Footer()
         {
-            if (_isFetching)
-                return;
-
             if (string.IsNullOrEmpty(_token))
                 return; // Early return since no repositories to show yet
+
+            if (_isFetching)
+                return;
 
             _shouldCreateAssemblyDefinition = EditorGUILayout.ToggleLeft("Create Assembly Definitions", _shouldCreateAssemblyDefinition);
             _shouldCreatePackageManifests = EditorGUILayout.ToggleLeft("Create Package Manifests", _shouldCreatePackageManifests);
