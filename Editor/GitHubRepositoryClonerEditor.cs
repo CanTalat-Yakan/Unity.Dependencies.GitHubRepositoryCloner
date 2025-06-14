@@ -1,10 +1,8 @@
 #if UNITY_EDITOR
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace UnityEssentials
 {
@@ -130,6 +128,7 @@ namespace UnityEssentials
             if (!_repositorySelected.Any(selected => selected))
                 return;
 
+            GUILayout.Space(-1);
             using (new GUILayout.VerticalScope(EditorStyles.helpBox))
             {
                 _shouldCreateAssemblyDefinition = EditorGUILayout.ToggleLeft("Create Assembly Definitions", _shouldCreateAssemblyDefinition);
