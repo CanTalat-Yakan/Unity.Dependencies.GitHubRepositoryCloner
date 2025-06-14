@@ -9,7 +9,7 @@ namespace UnityEssentials
 {
     public partial class GitHubRepositoryCloner
     {
-        public EditorWindowDrawer window;
+        public EditorWindowDrawer Window;
         public Action Repaint;
         public Action Close;
 
@@ -17,7 +17,7 @@ namespace UnityEssentials
         public static void ShowWindow()
         {
             var editor = new GitHubRepositoryCloner();
-            editor.window = new EditorWindowDrawer("GitHub Repository Cloner", new(700, 800), new(400, 500))
+            editor.Window = new EditorWindowDrawer("GitHub Repository Cloner", new(700, 800), new(400, 500))
                 .SetHeader(editor.Header)
                 .SetBody(editor.Body)
                 .SetFooter(editor.Footer)
@@ -97,7 +97,7 @@ namespace UnityEssentials
             else if (_repositoryNames.Count > 0)
             {
                 // Calculate space for the scroll view dynamically
-                float totalHeight = window.position.height;
+                float totalHeight = Window.position.height;
                 float headerHeight = EditorGUIUtility.singleLineHeight * 3 + 30;
                 float toggleTemplateHeight = EditorGUIUtility.singleLineHeight + 6;
                 float buttonHeight = 90;
