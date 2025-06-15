@@ -29,11 +29,11 @@ namespace UnityEssentials
         {
             if (string.IsNullOrEmpty(_token))
             {
-                GUILayout.Label("Enter your GitHub token:");
+                GUILayout.Label("Enter your Git Token:");
 
-                _tokenPlaceholder = EditorGUILayout.TextField(_tokenPlaceholder);
+                _tokenPlaceholder = EditorGUILayout.PasswordField(_tokenPlaceholder, EditorStyles.toolbarTextField);
 
-                if (GUILayout.Button("Save Token"))
+                if (GUILayout.Button("Save Token", EditorStyles.toolbarButton))
                 {
                     _token = _tokenPlaceholder;
                     EditorPrefs.SetString(TokenKey, _token);
@@ -69,6 +69,7 @@ namespace UnityEssentials
                 _repositoryNames.Clear();
                 _allRepositoryNames.Clear();
                 _repositorySelected.Clear();
+                _tokenPlaceholder = string.Empty;
             }
         }
 
@@ -101,15 +102,6 @@ namespace UnityEssentials
             }
 
             if (_repositoryNames.Count > 0)
-            {
-                // Calculate space for the scroll view dynamically
-                float totalHeight = Window.position.height;
-                float headerHeight = EditorGUIUtility.singleLineHeight * 3 + 30;
-                float toggleTemplateHeight = EditorGUIUtility.singleLineHeight + 6;
-                float buttonHeight = 90;
-                float scrollHeight = totalHeight - (headerHeight + toggleTemplateHeight + buttonHeight);
-                scrollHeight = Mathf.Max(scrollHeight, 100);
-
                 for (int i = 0; i < _repositoryNames.Count; i++)
                 {
                     if (_repositorySelected.Count < _repositoryNames.Count)
@@ -117,7 +109,6 @@ namespace UnityEssentials
 
                     _repositorySelected[i] = EditorGUILayout.ToggleLeft(_repositoryNames[i], _repositorySelected[i]);
                 }
-            }
         }
 
         public void Footer()
