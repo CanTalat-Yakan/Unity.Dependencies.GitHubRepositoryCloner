@@ -419,7 +419,7 @@ namespace UnityEssentials
 
         private string DefaultPackageManifestToJson(string packageName)
         {
-            var manifest = new PackageManifest.PackageJson();
+            var manifest = new PackageManifestData();
             manifest.name = $"com.{DefaultOrganizationName.ToLower()}.{packageName.ToLower()}";
             manifest.displayName = $"{DefaultOrganizationName} {packageName}";
             manifest.unity = DefaultUnityVersion;
