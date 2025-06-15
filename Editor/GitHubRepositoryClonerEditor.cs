@@ -146,7 +146,10 @@ namespace UnityEssentials
                 _shouldCreatePackageManifests = EditorGUILayout.ToggleLeft("Create Package Manifests", _shouldCreatePackageManifests);
                 _shouldUseTemplateFiles = EditorGUILayout.ToggleLeft("Copy Template Files", _shouldUseTemplateFiles);
 
-                if (GUILayout.Button("Clone Selected Repositories", GUILayout.Height(24)))
+                string repositryString = _repositorySelected.Count(selected => selected) == 1
+                    ? "Repository"
+                    : "Repositories";
+                if (GUILayout.Button($"Clone Selected {repositryString}", GUILayout.Height(24)))
                 {
                     CloneSelectedRepositories();
 
