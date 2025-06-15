@@ -17,8 +17,8 @@ namespace UnityEssentials
         {
             var editor = new GitHubRepositoryCloner();
             editor.Window = new EditorWindowDrawer("GitHub Repository Cloner", new(400, 500))
-                .SetHeader(editor.Header, EditorWindowDrawer.GUISkin.Toolbar)
-                .SetBody(editor.Body, EditorWindowDrawer.GUISkin.Margin)
+                .SetHeader(editor.Header, EditorWindowStyle.Toolbar)
+                .SetBody(editor.Body, EditorWindowStyle.Margin)
                 .SetFooter(editor.Footer)
                 .GetRepaintEvent(out editor.Repaint)
                 .GetCloseEvent(out editor.Close)
