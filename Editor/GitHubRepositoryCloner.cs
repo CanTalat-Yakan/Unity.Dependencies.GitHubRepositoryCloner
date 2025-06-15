@@ -12,6 +12,23 @@ using System;
 
 namespace UnityEssentials
 {
+    [Serializable]
+    public class AssemblyDefinitionData
+    {
+        public string name;
+        public bool allowUnsafeCode = false;
+        public bool noEngineReferences = false;
+        public bool overrideReferences = false;
+        public bool autoReferenced = true;
+        public string rootNamespace = string.Empty;
+        public string[] references = new string[] { };
+        public string[] precompiledReferences = new string[] { };
+        public string[] includePlatforms = new string[] { };
+        public string[] excludePlatforms = new string[] { };
+        public string[] defineConstraints = new string[] { };
+        public object[] versionDefines = new object[] { };
+    }
+
     /// <summary>
     /// Provides a Unity Editor window for cloning GitHub repositories into a Unity project.
     /// </summary>
@@ -189,8 +206,10 @@ namespace UnityEssentials
         /// performed on the main thread.  A progress bar is displayed during the cloning process, and the Unity asset
         /// database is refreshed  upon completion.</remarks>
         /// <param name="targetFolder">The path to the target folder where the repositories will be cloned. This must be a valid directory path.</param>
-        public async void CloneSelectedRepositories(string targetFolder)
+        public async void CloneSelectedRepositories()
         {
+            var targetFolder = GetSelectedPath();
+
             var selectedRepositories = new List<string>();
 
             for (int i = 0; i < _repositoryNames.Count; i++)
@@ -203,7 +222,7 @@ namespace UnityEssentials
                 return;
             }
 
-            if (!EditorUtility.DisplayDialog("Confirm Clone", $"Clone {selectedRepositories.Count} repositories into:\nAssets/ ?", "Yes", "Cancel"))
+            if (!EditorUtility.DisplayDialog("Confirm Clone", $"Clone {selectedRepositories.Count} repositories into:\n{GetSelectedPath()} ?", "Yes", "Cancel"))
                 return;
 
             foreach (var repositoryFullName in selectedRepositories)
@@ -336,7 +355,7 @@ namespace UnityEssentials
 
                     return true;
                 }
-                catch (System.Exception ex)
+                catch (Exception ex)
                 {
                     Debug.LogError($"Exception cloning repository: {ex.Message}");
                     return false;
@@ -354,7 +373,7 @@ namespace UnityEssentials
                     File.Move(licensePath, newLicensePath);
                     Debug.Log($"Renamed LICENSE to LICENSE.md in {repositoryFullName}");
                 }
-                catch (System.Exception ex)
+                catch (Exception ex)
                 {
                     Debug.LogError($"Failed to rename LICENSE file: {ex.Message}");
                 }
@@ -374,7 +393,8 @@ namespace UnityEssentials
             // Create new .asmdef with the correct name
             var asmdefData = new AssemblyDefinitionData
             {
-                name = $"{DefaultOrganizationName}.{packageName}"
+                name = $"{DefaultOrganizationName}.{packageName}",
+                rootNamespace = DefaultOrganizationName
             };
 
             string asmdefPath = Path.Combine(localPath, $"{DefaultOrganizationName}.{packageName}.asmdef");
@@ -431,21 +451,12 @@ namespace UnityEssentials
             return manifest.ToJson();
         }
 
-        [System.Serializable]
-        public class AssemblyDefinitionData
+        private static string GetSelectedPath()
         {
-            public string name;
-            public bool allowUnsafeCode = false;
-            public bool noEngineReferences = false;
-            public bool overrideReferences = false;
-            public bool autoReferenced = true;
-            public string rootNamespace = DefaultOrganizationName;
-            public string[] references = new string[] { };
-            public string[] precompiledReferences = new string[] { };
-            public string[] includePlatforms = new string[] { };
-            public string[] excludePlatforms = new string[] { };
-            public string[] defineConstraints = new string[] { };
-            public object[] versionDefines = new object[] { };
+            string assetPath = AssetDatabase.GetAssetPath(Selection.activeObject);
+            if (string.IsNullOrEmpty(assetPath)) return null;
+            string fullPath = Path.GetFullPath(assetPath);
+            return Directory.Exists(fullPath) ? fullPath : Path.GetDirectoryName(fullPath);
         }
     }
 }

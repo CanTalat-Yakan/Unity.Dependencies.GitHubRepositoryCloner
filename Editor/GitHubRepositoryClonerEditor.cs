@@ -1,5 +1,6 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System;
+using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -11,6 +12,13 @@ namespace UnityEssentials
         public EditorWindowDrawer Window;
         public Action Repaint;
         public Action Close;
+
+        [MenuItem("Assets/GitHub Repository Cloner", true)]
+        public static bool ValidateGitHubRepositoryCloner()
+        {
+            string path = GetSelectedPath();
+            return !string.IsNullOrEmpty(path) && Directory.Exists(path);
+        }
 
         [MenuItem("Assets/GitHub Repository Cloner", priority = -80)]
         public static void ShowWindow()
@@ -76,7 +84,19 @@ namespace UnityEssentials
         public void Body()
         {
             if (string.IsNullOrEmpty(_token))
+            {
+                EditorGUILayout.HelpBox(
+                    "To use the GitHub Repository Cloner, you need a Personal Access Token (PAT).",
+                    MessageType.Info);
+                EditorGUILayout.LabelField(
+                    "You can create either a Fine-grained or Classic token. When creating the token:\n\n" +
+                    "• Set access to 'All repositories' (applies to all current and future repositories you own, including public repositories).\n\n" +
+                    "• Under 'Repository permissions', enable 'Contents' with 'Read and write' access. This allows access to repository contents, commits, branches, downloads, releases, and merges.\n\n" +
+                    "After generating the token, copy it and paste it above.", EditorStyles.wordWrappedLabel);
+                if (EditorGUILayout.LinkButton("Create Personal Access Tokens"))
+                    Application.OpenURL("https://github.com/settings/personal-access-tokens");
                 return;
+            }
 
             if (_isFetching)
             {
@@ -128,8 +148,7 @@ namespace UnityEssentials
 
                 if (GUILayout.Button("Clone Selected Repositories", GUILayout.Height(24)))
                 {
-                    string targetPath = Application.dataPath;
-                    CloneSelectedRepositories(targetPath);
+                    CloneSelectedRepositories();
 
                     FetchRepositories(Repaint);
                     GUI.FocusControl(null);
