@@ -21,7 +21,7 @@ namespace UnityEssentials
         }
 
         [MenuItem("Assets/GitHub Repository Cloner", priority = -80)]
-        public static void ShowWindow()
+        public static void ShowUtility()
         {
             var editor = new GitHubRepositoryCloner();
             editor.Window = new EditorWindowDrawer("GitHub Repository Cloner", new(400, 500))
