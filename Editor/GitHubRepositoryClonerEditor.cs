@@ -24,13 +24,14 @@ namespace UnityEssentials
         public static void ShowUtility()
         {
             var editor = new GitHubRepositoryCloner();
-            editor.Window = new EditorWindowDrawer("GitHub Repository Cloner", new(400, 500))
+            editor.Window = EditorWindowDrawer
+                .CreateInstance("GitHub Repository Cloner", new(400, 500))
                 .SetHeader(editor.Header, EditorWindowStyle.Toolbar)
                 .SetBody(editor.Body, EditorWindowStyle.Margin)
                 .SetFooter(editor.Footer)
                 .GetRepaintEvent(out editor.Repaint)
                 .GetCloseEvent(out editor.Close)
-                .ShowUtility();
+                .ShowAsUtility();
         }
 
         public void Header()
