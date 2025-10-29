@@ -20,7 +20,7 @@ using UnityEssentials;
 
 # GitHub Repository Cloner
 
-Clone multiple GitHub repositories directly into your Unity project from a simple editor window. Authenticate with a GitHub Personal Access Token (PAT), filter and select repos, and optionally scaffold each repo with an assembly definition, a package manifest, and your own templates — all in one go.
+Clone multiple GitHub repositories directly into your Unity project from a simple editor window. Authenticate with a GitHub Personal Access Token (PAT), filter and select repos, and optionally scaffold each repo with an assembly definition, a package manifest, and your own templates - all in one go.
 
 This is an editor-only utility that ships as part of the Unity Essentials ecosystem.
 
@@ -97,6 +97,25 @@ Tip: If the tool can’t find Git/LFS, install them and restart Unity so PATH up
   - Recursively copies everything (except `.meta` files) from `Assets/Templates` into the cloned repo folder
   - If `Assets/Templates` does not exist, the tool logs a warning and continues
 
+## Cloner window options (UPM scaffolding)
+
+Inside the cloner window, you can toggle these options independently to add or regenerate UPM components for each selected repository:
+
+- Create Assembly Definition
+  - Generates a `.asmdef` named `UnityEssentials.<PackageName>` with root namespace `UnityEssentials`.
+  - Note: Existing `*.asmdef` files in the repo root will be removed to avoid duplicates.
+
+- Create Package Manifest
+  - Generates a `package.json` with Unity Essentials defaults (name, displayName, unity version, description, author, dependencies).
+  - Note: If a `package.json` already exists, it will be overwritten.
+
+- Copy Template Files
+  - Copies the full template tree from `Assets/Templates/` into the repo (skips `.meta` files).
+  - Best results: Extract `UnityEssentials_GithubRepositoryCloner_Templates.zip` into your `Assets/` folder first, so `Assets/Templates/` contains a clean UPM-style layout (standard folders, sample `package.json`, `.asmdef`, tests).
+  - Note: Existing files with the same names will be overwritten.
+
+Use these toggles selectively: if your repository already has some of these files, leave that option off; if it’s missing something, enable only the piece you want to add.
+
 ## Where things happen
 
 - Target folder: Whatever you selected in the Project window under `Assets/`
@@ -127,40 +146,6 @@ Tip: If you don’t want the repo name altered (e.g., to keep `UnityFoo` intact)
 - Menu availability: The Assets → GitHub Repository Cloner menu is enabled only when a valid folder (or an asset inside one) is selected.
 - Token header: The tool uses the `token` auth scheme for the GitHub API request.
 
-## Troubleshooting
-
-- Menu item disabled
-  - Make sure you’ve selected a folder (or an asset inside one) in the Project window under `Assets/`.
-
-- “Invalid token” or no repositories listed
-  - Ensure your PAT is valid and hasn’t expired.
-  - For classic tokens, include repo access. For fine‑grained tokens, grant repository Contents permission (Read is sufficient for clone; Write is not required but referenced in the in‑tool help).
-  - Click Change Token to reset and paste a new one.
-
-- Git not found
-  - Ensure Git is installed and on your PATH, then restart Unity.
-  - Linux (Debian/Ubuntu):
-    ```bash
-    sudo apt-get update
-    sudo apt-get install -y git
-    ```
-
-- Git LFS issues
-  - If you see a warning about Git LFS not being installed but your repos use LFS:
-    ```bash
-    # Linux (Debian/Ubuntu)
-    sudo apt-get install -y git-lfs
-    git lfs install
-    ```
-
-- Repo doesn’t appear in the list
-  - It may be beyond the first 100 results.
-  - A folder with the same name already exists somewhere under `Assets/`.
-  - Your token may not have access to that repository (org restrictions, fine‑grained scopes).
-
-- Cloning private repositories fails
-  - Verify token permissions and that the account has access.
-
 ## Security notes
 
 - Token storage
@@ -173,7 +158,3 @@ Tip: If you don’t want the repo name altered (e.g., to keep `UnityFoo` intact)
     # run inside each cloned repo folder
     git remote set-url origin https://github.com/<owner>/<name>.git
     ```
-
-## License
-
-See `LICENSE.md` in this folder.
