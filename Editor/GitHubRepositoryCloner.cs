@@ -39,15 +39,15 @@ namespace UnityEssentials
     /// and select "GitHub Repository Cloner".</remarks>
     public partial class GitHubRepositoryCloner
     {
-        public string _token;
-        public List<string> _repositoryNames = new();
-        public List<string> _allRepositoryNames = new();
-        public List<bool> _repositorySelected = new();
-        public bool _isFetching = false;
+        public string Token;
+        public List<string> RepositoryNames = new();
+        public List<string> AllRepositoryNames = new();
+        public List<bool> RepositorySelected = new();
+        public bool IsFetching = false;
 
-        public bool _shouldCreateAssemblyDefinition = true;
-        public bool _shouldCreatePackageManifests = true;
-        public bool _shouldUseTemplateFiles = true;
+        public bool ShouldCreateAssemblyDefinition = true;
+        public bool ShouldCreatePackageManifests = true;
+        public bool ShouldUseTemplateFiles = true;
 
         private string _tokenPlaceholder = string.Empty;
         private string _repositoryNameFilter = string.Empty;
@@ -56,20 +56,16 @@ namespace UnityEssentials
         private const string TemplateFolder = "Assets/Templates";
         private const string DefaultAuthorName = "Unity Essentials";
         private const string DefaultOrganizationName = "UnityEssentials";
-        private const string DefaultUnityVersion = "2022.1";
+        private const string DefaultUnityVersion = "6000.0";
         private const string DefaultDescription = "This is a part of the UnityEssentials Ecosystem";
-        private const string DefaultDependency = "com.unityessentials.core";
-        private const string DefaultDependencyVersion = "1.0.0";
         private const string ExcludeString = "Unity";
 
         public GitHubRepositoryCloner()
         {
-            // Restore token from EditorPrefs if needed
-            if (string.IsNullOrEmpty(_token))
-                _token = EditorPrefs.GetString(TokenKey, "");
+            Token = EditorPrefs.GetString(TokenKey, "");
 
             // If we have a token, fetch repositories automatically
-            if (!string.IsNullOrEmpty(_token) && _repositoryNames.Count == 0 && !_isFetching)
+            if (!string.IsNullOrEmpty(Token) && RepositoryNames.Count == 0 && !IsFetching)
                 FetchRepositories();
         }
 
@@ -82,31 +78,32 @@ namespace UnityEssentials
         /// successful retrieval.</remarks>
         public async void FetchRepositories(Action repaint = null)
         {
-            _isFetching = true;
+            IsFetching = true;
             repaint?.Invoke();
 
-            if (string.IsNullOrEmpty(_token))
+            if (string.IsNullOrEmpty(Token))
             {
                 Debug.LogWarning("[Git] Token is empty.");
-                _isFetching = false;
+                IsFetching = false;
                 repaint?.Invoke();
                 return;
             }
 
             using var client = new HttpClient();
             client.DefaultRequestHeaders.UserAgent.ParseAdd("UnityGitClient");
-            client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("token", _token);
+            client.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("token", Token);
 
             var response = await client.GetAsync("https://api.github.com/user/repos?per_page=100");
             if (!response.IsSuccessStatusCode)
             {
                 Debug.LogError("[Git] Invalid token or failed to fetch repositories. Clearing token.");
                 EditorPrefs.DeleteKey(TokenKey);
-                _token = "";
-                _repositoryNames.Clear();
-                _allRepositoryNames.Clear();
-                _repositorySelected.Clear();
-                _isFetching = false;
+                Token = "";
+                RepositoryNames.Clear();
+                AllRepositoryNames.Clear();
+                RepositorySelected.Clear();
+                IsFetching = false;
                 repaint?.Invoke();
                 return;
             }
@@ -118,15 +115,15 @@ namespace UnityEssentials
             var filteredByExistence = FilterExistingRepositories(allRepositories);
 
             // Store all fetched repositories
-            _allRepositoryNames = filteredByExistence;
+            AllRepositoryNames = filteredByExistence;
 
             // Apply current filter
-            _repositoryNames = FilterByName(_allRepositoryNames, _repositoryNameFilter);
+            RepositoryNames = FilterByName(AllRepositoryNames, _repositoryNameFilter);
 
             // Reset selection list
-            _repositorySelected = new List<bool>(new bool[_repositoryNames.Count]);
+            RepositorySelected = new List<bool>(new bool[RepositoryNames.Count]);
 
-            _isFetching = false;
+            IsFetching = false;
             repaint?.Invoke();
         }
 
@@ -145,10 +142,10 @@ namespace UnityEssentials
             List<string> names = new();
 
             int index = 0;
-            while ((index = json.IndexOf("\"full_name\":\"", index)) != -1)
+            while ((index = json.IndexOf("\"full_name\":\"", index, StringComparison.Ordinal)) != -1)
             {
                 index += "\"full_name\":\"".Length;
-                int end = json.IndexOf("\"", index);
+                int end = json.IndexOf("\"", index, StringComparison.Ordinal);
                 string name = json.Substring(index, end - index);
                 names.Add(name);
                 index = end;
@@ -165,7 +162,7 @@ namespace UnityEssentials
             string assetsPath = Application.dataPath;
             var existingFolders = new HashSet<string>(
                 Directory.GetDirectories(assetsPath, "*", SearchOption.AllDirectories)
-                    .Select(path => Path.GetFileName(path))
+                    .Select(Path.GetFileName)
             );
 
             var filtered = new List<string>();
@@ -175,6 +172,7 @@ namespace UnityEssentials
                 if (!existingFolders.Contains(repoFolderName))
                     filtered.Add(fullName);
             }
+
             return filtered;
         }
 
@@ -205,16 +203,15 @@ namespace UnityEssentials
         /// performed based on the current settings.  The method ensures that all file operations and UI updates are
         /// performed on the main thread.  A progress bar is displayed during the cloning process, and the Unity asset
         /// database is refreshed  upon completion.</remarks>
-        /// <param name="targetFolder">The path to the target folder where the repositories will be cloned. This must be a valid directory path.</param>
         public async void CloneSelectedRepositories()
         {
             var targetFolder = GetSelectedPath();
 
             var selectedRepositories = new List<string>();
 
-            for (int i = 0; i < _repositoryNames.Count; i++)
-                if (_repositorySelected[i])
-                    selectedRepositories.Add(_repositoryNames[i]);
+            for (int i = 0; i < RepositoryNames.Count; i++)
+                if (RepositorySelected[i])
+                    selectedRepositories.Add(RepositoryNames[i]);
 
             if (selectedRepositories.Count == 0)
             {
@@ -222,12 +219,13 @@ namespace UnityEssentials
                 return;
             }
 
-            if (!EditorUtility.DisplayDialog("Confirm Clone", $"Clone {selectedRepositories.Count} repositories into:\n{GetSelectedPath()} ?", "Yes", "Cancel"))
+            if (!EditorUtility.DisplayDialog("Confirm Clone",
+                    $"Clone {selectedRepositories.Count} repositories into:\n{GetSelectedPath()} ?", "Yes", "Cancel"))
                 return;
 
             foreach (var repositoryFullName in selectedRepositories)
             {
-                string cloneUrl = $"https://{_token}@github.com/{repositoryFullName}.git"; // Include token in URL
+                string cloneUrl = $"https://{Token}@github.com/{repositoryFullName}.git"; // Include token in URL
                 string repositoryFolderName = repositoryFullName.Split('/')[1];
                 string packageName = repositoryFolderName.Replace(ExcludeString, "");
                 string localPath = Path.Combine(targetFolder, repositoryFolderName);
@@ -240,7 +238,9 @@ namespace UnityEssentials
 
                 EditorUtility.DisplayProgressBar("Cloning Repositories", $"Cloning {repositoryFullName}...", 0);
 
-                bool success = await CloneGitRepository(cloneUrl, localPath).ConfigureAwait(true); // Ensure main thread continuation
+                bool success =
+                    await CloneGitRepository(cloneUrl, localPath)
+                        .ConfigureAwait(true); // Ensure main thread continuation
 
                 if (success)
                 {
@@ -251,13 +251,13 @@ namespace UnityEssentials
 
                     RenameLicenseFile(localPath, repositoryFullName);
 
-                    if (_shouldCreateAssemblyDefinition)
+                    if (ShouldCreateAssemblyDefinition)
                         CreateAssemblyDefinition(localPath, packageName);
 
-                    if (_shouldCreatePackageManifests)
+                    if (ShouldCreatePackageManifests)
                         CreatePackageManifest(localPath, packageName);
 
-                    if (_shouldUseTemplateFiles)
+                    if (ShouldUseTemplateFiles)
                         CopyTemplateFiles(TemplateFolder, localPath);
                 }
                 else Debug.LogError($"Failed to clone repository: {repositoryFullName}");
@@ -296,16 +296,17 @@ namespace UnityEssentials
                     };
 
                     using (Process process = Process.Start(psi))
-                    {
-                        process.WaitForExit();
-
-                        if (process.ExitCode != 0)
+                        if (process != null)
                         {
-                            string error = process.StandardError.ReadToEnd();
-                            Debug.LogError($"Git clone error: {error}");
-                            return false;
+                            process.WaitForExit();
+
+                            if (process.ExitCode != 0)
+                            {
+                                string error = process.StandardError.ReadToEnd();
+                                Debug.LogError($"Git clone error: {error}");
+                                return false;
+                            }
                         }
-                    }
 
                     // Step 2: Check for LFS usage
                     string gitattributesPath = Path.Combine(localPath, ".gitattributes");
@@ -335,21 +336,24 @@ namespace UnityEssentials
                             };
 
                             using (Process lfsProcess = Process.Start(lfsPsi))
-                            {
-                                lfsProcess.WaitForExit();
-
-                                if (lfsProcess.ExitCode != 0)
+                                if (lfsProcess != null)
                                 {
-                                    string lfsError = lfsProcess.StandardError.ReadToEnd();
-                                    if (lfsError.Contains("git-lfs: command not found") || lfsError.Contains("'lfs' is not a git command"))
-                                        Debug.LogWarning("Git LFS is required but not installed. LFS files were not pulled.");
-                                    else
+                                    lfsProcess.WaitForExit();
+
+                                    if (lfsProcess.ExitCode != 0)
                                     {
-                                        Debug.LogError($"Git LFS pull error: {lfsError}");
-                                        return false;
+                                        string lfsError = lfsProcess.StandardError.ReadToEnd();
+                                        if (lfsError.Contains("git-lfs: command not found") ||
+                                            lfsError.Contains("'lfs' is not a git command"))
+                                            Debug.LogWarning(
+                                                "Git LFS is required but not installed. LFS files were not pulled.");
+                                        else
+                                        {
+                                            Debug.LogError($"Git LFS pull error: {lfsError}");
+                                            return false;
+                                        }
                                     }
                                 }
-                            }
                         }
                     }
 
@@ -446,7 +450,7 @@ namespace UnityEssentials
             manifest.version = "1.0.0";
             manifest.description = DefaultDescription;
             manifest.author = new() { name = DefaultAuthorName };
-            manifest.dependencies = new() { { DefaultDependency, DefaultDependencyVersion } };
+            manifest.dependencies = new();
 
             return manifest.ToJson();
         }

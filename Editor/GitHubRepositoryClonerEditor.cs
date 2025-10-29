@@ -36,7 +36,7 @@ namespace UnityEssentials
 
         public void Header()
         {
-            if (string.IsNullOrEmpty(_token))
+            if (string.IsNullOrEmpty(Token))
             {
                 GUILayout.Label("Enter your Git Token:");
 
@@ -44,8 +44,8 @@ namespace UnityEssentials
 
                 if (GUILayout.Button("Save Token", EditorStyles.toolbarButton))
                 {
-                    _token = _tokenPlaceholder;
-                    EditorPrefs.SetString(TokenKey, _token);
+                    Token = _tokenPlaceholder;
+                    EditorPrefs.SetString(TokenKey, Token);
 
                     FetchRepositories(Repaint);
                 }
@@ -59,8 +59,8 @@ namespace UnityEssentials
             if (_repositoryNameFilter != oldFilter)
             {
                 // Only filter locally, do not fetch
-                _repositoryNames = FilterByName(_allRepositoryNames, _repositoryNameFilter);
-                _repositorySelected = new(new bool[_repositoryNames.Count]);
+                RepositoryNames = FilterByName(AllRepositoryNames, _repositoryNameFilter);
+                RepositorySelected = new(new bool[RepositoryNames.Count]);
             }
 
             GUILayout.Space(4);
@@ -73,18 +73,18 @@ namespace UnityEssentials
 
             if (GUILayout.Button("Change Token", EditorStyles.toolbarButton))
             {
-                _token = "";
+                Token = "";
                 EditorPrefs.DeleteKey(TokenKey);
-                _repositoryNames.Clear();
-                _allRepositoryNames.Clear();
-                _repositorySelected.Clear();
+                RepositoryNames.Clear();
+                AllRepositoryNames.Clear();
+                RepositorySelected.Clear();
                 _tokenPlaceholder = string.Empty;
             }
         }
 
         public void Body()
         {
-            if (string.IsNullOrEmpty(_token))
+            if (string.IsNullOrEmpty(Token))
             {
                 EditorGUILayout.HelpBox(
                     "To use the GitHub Repository Cloner, you need a Personal Access Token (PAT).",
@@ -99,13 +99,13 @@ namespace UnityEssentials
                 return;
             }
 
-            if (_isFetching)
+            if (IsFetching)
             {
                 GUILayout.Label("Fetching...");
                 return;
             }
 
-            if (_repositoryNames.Count == 0)
+            if (RepositoryNames.Count == 0)
             {
                 GUILayout.Label("No repositories found matching the filter.");
                 return;
@@ -114,40 +114,40 @@ namespace UnityEssentials
             using (new GUILayout.HorizontalScope())
             {
                 if (GUILayout.Button("All", GUILayout.Width(30)))
-                    for (int i = 0; i < _repositorySelected.Count; i++)
-                        _repositorySelected[i] = true;
+                    for (int i = 0; i < RepositorySelected.Count; i++)
+                        RepositorySelected[i] = true;
 
                 if (GUILayout.Button("None", GUILayout.Width(40)))
-                    for (int i = 0; i < _repositorySelected.Count; i++)
-                        _repositorySelected[i] = false;
+                    for (int i = 0; i < RepositorySelected.Count; i++)
+                        RepositorySelected[i] = false;
             }
 
-            if (_repositoryNames.Count > 0)
-                for (int i = 0; i < _repositoryNames.Count; i++)
+            if (RepositoryNames.Count > 0)
+                for (int i = 0; i < RepositoryNames.Count; i++)
                 {
-                    if (_repositorySelected.Count < _repositoryNames.Count)
-                        _repositorySelected.Add(false);
+                    if (RepositorySelected.Count < RepositoryNames.Count)
+                        RepositorySelected.Add(false);
 
-                    _repositorySelected[i] = EditorGUILayout.ToggleLeft(_repositoryNames[i], _repositorySelected[i]);
+                    RepositorySelected[i] = EditorGUILayout.ToggleLeft(RepositoryNames[i], RepositorySelected[i]);
                 }
         }
 
         public void Footer()
         {
-            if (string.IsNullOrEmpty(_token) || _isFetching)
+            if (string.IsNullOrEmpty(Token) || IsFetching)
                 return;
 
-            if (!_repositorySelected.Any(selected => selected))
+            if (!RepositorySelected.Any(selected => selected))
                 return;
 
             GUILayout.Space(-1);
             using (new GUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                _shouldCreateAssemblyDefinition = EditorGUILayout.ToggleLeft("Create Assembly Definitions", _shouldCreateAssemblyDefinition);
-                _shouldCreatePackageManifests = EditorGUILayout.ToggleLeft("Create Package Manifests", _shouldCreatePackageManifests);
-                _shouldUseTemplateFiles = EditorGUILayout.ToggleLeft("Copy Template Files", _shouldUseTemplateFiles);
-
-                string repositryString = _repositorySelected.Count(selected => selected) == 1
+                ShouldCreateAssemblyDefinition = EditorGUILayout.ToggleLeft("Create Assembly Definitions", ShouldCreateAssemblyDefinition);
+                ShouldCreatePackageManifests = EditorGUILayout.ToggleLeft("Create Package Manifests", ShouldCreatePackageManifests);
+                ShouldUseTemplateFiles = EditorGUILayout.ToggleLeft("Copy Template Files", ShouldUseTemplateFiles);
+                
+                string repositryString = RepositorySelected.Count(selected => selected) == 1
                     ? "Repository"
                     : "Repositories";
                 if (GUILayout.Button($"Clone Selected {repositryString}", GUILayout.Height(24)))
