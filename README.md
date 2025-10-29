@@ -3,6 +3,24 @@
 **Unity Essentials** is a lightweight, modular utility namespace designed to streamline development in Unity.
 It provides a collection of foundational tools, extensions, and helpers to enhance productivity and maintain clean code architecture.
 
+## Installation
+
+Install the Unity Essentials entry package via Unity's Package Manager, then install all modules from the Tools menu:
+
+1) Add the entry package (via Git URL)
+- Open: Window → Package Manager
+- Click the + button → "Add package from git URL…"
+- Paste this URL and click Add:
+  
+```
+https://github.com/CanTalat-Yakan/UnityEssentials.git
+```
+
+2) Install or update all Unity Essentials packages
+- In Unity, go to: Tools → Install & Update UnityEssentials
+- Use the installer to install all packages (or select only the ones you need)
+- Re-run the same menu at any time to update packages to the latest versions
+
 ## 📦 This Package
 
 This package is part of the **Unity Essentials** ecosystem.  
@@ -111,7 +129,7 @@ Inside the cloner window, you can toggle these options independently to add or r
 
 - Copy Template Files
   - Copies the full template tree from `Assets/Templates/` into the repo (skips `.meta` files).
-  - Best results: Extract `UnityEssentials_GithubRepositoryCloner_Templates.zip` into your `Assets/` folder first, so `Assets/Templates/` contains a clean UPM-style layout (standard folders, sample `package.json`, `.asmdef`, tests).
+  - Best results: Extract `UnityEssentials_GithubRepositoryCloner_Templates.zip` into your `Assets/` folder first, so `Assets/Templates` contains a clean UPM-style layout (standard folders, sample `package.json`, `.asmdef`, tests).
   - Note: Existing files with the same names will be overwritten.
 
 Use these toggles selectively: if your repository already has some of these files, leave that option off; if it’s missing something, enable only the piece you want to add.
