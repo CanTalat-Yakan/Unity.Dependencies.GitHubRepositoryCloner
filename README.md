@@ -28,7 +28,7 @@ Install the Unity Essentials entry package via Unity's Package Manager, then ins
 
 > Quick overview: Clone multiple GitHub repositories into your Unity project with a stored HTTPS personal access token. Filter, multi-select, and optionally scaffold asmdef/package/templates. LFS-aware.
 
-Clone multiple GitHub repositories directly into your Unity project from a simple editor window. Authenticate with a GitHub Personal Access Token (PAT), filter and select repos, and optionally scaffold each repo with an assembly definition, a package manifest, and your own templates - all in one go.
+Multiple GitHub repositories can be cloned directly into a Unity project from a simple editor window. Authentication is provided via a GitHub Personal Access Token (PAT), repositories can be filtered and selected in bulk, and optional scaffolding (assembly definition, package manifest, and project templates) can be applied post‑clone.
 
 ![screenshot](Documentation/Screenshot.png)
 
@@ -66,7 +66,7 @@ Selection logic: Select any folder (or asset) in the Project window; the tool re
 5) Choose optional post-clone steps (Asmdef, Package, Templates)
 6) Click Clone; progress is shown and the Asset Database refreshes on completion
 
-## What It Generates (optional)
+### What It Generates (optional)
 - Assembly definition (`.asmdef`)
   - Name: `UnityEssentials.<PackageName>`; Root namespace: `UnityEssentials`
   - Existing `*.asmdef` at the repo root are removed first to avoid duplicates
@@ -76,7 +76,7 @@ Selection logic: Select any folder (or asset) in the Project window; the tool re
 - Templates
   - Recursively copies everything (skips `.meta`) from `Assets/Templates` into the repo
 
-## Configuration Defaults
+### Configuration Defaults
 You can tweak defaults in `Editor/GitHubRepositoryCloner.cs`:
 - DefaultOrganizationName: `UnityEssentials`
 - DefaultAuthorName: `Unity Essentials`
